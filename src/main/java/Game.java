@@ -1,9 +1,10 @@
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.net.*;
+import java.util.Arrays;
+import java.util.Base64;
 
 class Game {
 	private final String url = "http://localhost:8081/";
@@ -12,8 +13,19 @@ class Game {
 
 	Game(){
 		try {
-			connectToServer(team_name);
-
+			SCResponse.SCRData connection_data = connectToServer(team_name);
+//			getInfo();
+			GameInfo.GIData state = getInfo();
+			while(!state.whose_turn.equals(connection_data.color)){
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				state = getInfo();
+			}
+			sendMove(connection_data.token, new Move(9, 13));
+			getInfo();
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -21,7 +33,33 @@ class Game {
 		}
 	}
 
-	private void connectToServer(String team_name) throws IOException {
+	private MoveResponse sendMove(String token, Move move) throws IOException {
+		HttpURLConnection connection = ((HttpURLConnection) new URL(url+"move").openConnection());
+		connection.setRequestMethod("POST");
+		connection.setRequestProperty("Accept", "application/json");
+		connection.setRequestProperty("Content-Type", "application/json; "+charset);
+		connection.setDoOutput(true);
+//		String encoded_token = Base64.getEncoder().encodeToString(token.getBytes());
+		String auth_header_value = Base64.getEncoder().encodeToString(("Token "+token).getBytes());
+		connection.setRequestProperty("Authorization", "Token "+token);
+
+		String serialized_move = String.format("{\n    \"move\": [%s, %s]\n}", move.from, move.to);
+		System.out.println(serialized_move);
+		try(OutputStream os = connection.getOutputStream()) {
+			byte[] input = serialized_move.getBytes(charset);
+			os.write(input, 0, input.length);
+		}
+
+		InputStream response = connection.getInputStream();
+		Reader reader = new InputStreamReader(response, charset);
+		MoveResponse result  = new Gson().fromJson(reader, MoveResponse.class);
+
+		System.out.println(result.status);
+		System.out.println(result.data);
+		return result;
+	}
+
+	private SCResponse.SCRData connectToServer(String team_name) throws IOException {
 		String query = "team_name="+URLEncoder.encode(team_name, charset);
 		URLConnection connection = new URL(url+"game?"+query).openConnection();
 		connection.setDoOutput(true); // Triggers POST.
@@ -33,26 +71,83 @@ class Game {
 
 		InputStream response = connection.getInputStream();
 		Reader reader = new InputStreamReader(response, charset);
-		SuccessfulConnectionJsonResponse result  = new Gson().fromJson(reader, SuccessfulConnectionJsonResponse.class);
+		SCResponse result  = new Gson().fromJson(reader, SCResponse.class);
 		System.out.println("Status: "+result.status);
 		System.out.println("Color: "+result.data.color);
 		System.out.println("Token: "+result.data.token);
-//		{
-//			"status": "success",
-//				"data": {
-//			"color": "BLACK",
-//					"token": "94ce212a5cc2ecbc3fdbd1229a415628"
+		return result.data;
+	}
+
+	private GameInfo.GIData getInfo() throws IOException {
+		String query = "game";
+		URLConnection connection = new URL(url+query).openConnection();
+		connection.setRequestProperty("Accept-Charset", charset);
+		InputStream response = connection.getInputStream();
+		Reader reader = new InputStreamReader(response, charset);
+		GameInfo result  = new Gson().fromJson(reader, GameInfo.class);
+
+		System.out.println(result.data.status);
+		System.out.println("Whose turn: "+result.data.whose_turn);
+		System.out.println("Winner: "+result.data.winner);
+		System.out.println("Time: "+result.data.available_time);
+		System.out.println(result.data.last_move);
+//		for(GameInfo.Tile tile : result.data.board){
+//			System.out.println("(Pos: "+tile.position+", Color: "+tile.color+")");
 //		}
-//		}
+
+		return result.data;
 	}
 }
 
-class SuccessfulConnectionJsonResponse{
+class SCResponse {
 	String status;
-	SuccessfulConnectionJsonResponseData data;
+	SCRData data;
 
-	class SuccessfulConnectionJsonResponseData {
+	class SCRData {
 		String color;
 		String token;
 	}
+}
+
+class GameInfo {
+	String status;
+	GIData data;
+
+	class GIData {
+		String status;
+		String whose_turn;
+		String winner;
+		Tile[] board;
+		double available_time;
+		LastMove last_move;
+		boolean is_started;
+		boolean is_finished;
+	}
+
+	class Tile {
+		String color;
+		Integer row;
+		Integer column;
+		Boolean king;
+		Integer position;
+	}
+
+	class LastMove {
+		String player;
+		int[][] last_moves;
+
+		@Override
+		public String toString(){
+			StringBuffer moves_p = new StringBuffer();
+			for(int[] arr : last_moves){
+				moves_p.append(Arrays.toString(arr)+", ");
+			}
+			return player+": "+moves_p.toString();
+		}
+	}
+}
+
+class MoveResponse {
+	String status;
+	String data;
 }
