@@ -13,6 +13,7 @@ class Game {
 
 	Game(){
 		Board board = new Board(null, "RED");
+		MinMaxTree minMaxTree = new MinMaxTree(board, true);
 		try {
 			SCResponse.SCRData connection_data = connectToServer(team_name);
 			board.updateColor(connection_data.color);
@@ -45,7 +46,7 @@ class Game {
 		String auth_header_value = Base64.getEncoder().encodeToString(("Token "+token).getBytes());
 		connection.setRequestProperty("Authorization", "Token "+token);
 
-		String serialized_move = String.format("{\n    \"move\": [%s, %s]\n}", move.from, move.to);
+		String serialized_move = String.format("{\n    \"move\": %s\n}", move.toString());
 		System.out.println(serialized_move);
 		try(OutputStream os = connection.getOutputStream()) {
 			byte[] input = serialized_move.getBytes(charset);

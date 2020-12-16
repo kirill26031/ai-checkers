@@ -8,19 +8,19 @@ import java.util.ArrayList;
 
 public class Board {
     BoardTile[] tiles;
-    Piece[] pieces;
+    ArrayList<Piece> pieces;
     private String bot_color;
 
     public Board(Tile[] board, String bot_color) {
         if (board == null) board = generateDefaultBoard();
         this.bot_color = bot_color;
         tiles = new BoardTile[32];
-        pieces = new Piece[32];
+        pieces = new ArrayList<>(24);
         for (Tile tile : board) {
-            pieces[tile.position - 1] = new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), null);
+            pieces.add(new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), null));
             tiles[tile.position - 1] = new BoardTile(
                     new Point(tile.row, tile.column),
-                    pieces[tile.position - 1],
+                    pieces.get(pieces.size()-1),
                     tile.position - 1);
             tiles[tile.position - 1].piece.occupied_tile = tiles[tile.position - 1];
         }

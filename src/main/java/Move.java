@@ -4,19 +4,28 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 public class Move {
-	int from;
-	int to;
+	ArrayList<Integer> positions;
 
 	Move (int from, int to){
-		this.from = from;
-		this.to = to;
+		positions = new ArrayList<>(2);
+		positions.add(from);
+		positions.add(to);
+	}
+
+	Move(ArrayList<Integer> positions){
+		this.positions=positions;
 	}
 
 	@Override
 	public String toString(){
-		return "M{"+from+", "+to+"}";
+		StringBuilder start = new StringBuilder("[");
+		start.append(positions.get(0));
+		for(int i=1; i<positions.size(); ++i) start.append(", ").append(positions.get(i));
+		start.append(']');
+		return start.toString();
 	}
 }
 
@@ -27,7 +36,7 @@ class MoveAdapter implements JsonSerializer<Move> {
 
 		JsonObject obj = new JsonObject();
 
-		obj.addProperty("move", "["+move.from+ "," +move.to+"]");
+		obj.addProperty("move", move.toString());
 		return obj;
 	}
 }
