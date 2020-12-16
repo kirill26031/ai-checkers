@@ -4,11 +4,13 @@ public class BoardTile {
     ArrayList<BoardTile> neighbours;
     ArrayList<BoardTile> jump_neighbours;
     Point position;
+    int position_id;
     Piece piece;
 
-    public BoardTile(Point position, Piece piece) {
+    public BoardTile(Point position, Piece piece, int position_id) {
         this.piece = piece;
         this.position = position;
+        this.position_id = position_id;
     }
 
     public boolean isConnectedTo(BoardTile tile) {

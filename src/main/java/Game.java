@@ -12,9 +12,11 @@ class Game {
 	private final String charset = "UTF-8";
 
 	Game(){
+		Board board = new Board(null, "RED");
 		try {
 			SCResponse.SCRData connection_data = connectToServer(team_name);
-//			getInfo();
+			board.updateColor(connection_data.color);
+
 			GameInfo.GIData state = getInfo();
 			while(!state.whose_turn.equals(connection_data.color)){
 				try {
@@ -124,14 +126,6 @@ class GameInfo {
 		boolean is_finished;
 	}
 
-	class Tile {
-		String color;
-		Integer row;
-		Integer column;
-		Boolean king;
-		Integer position;
-	}
-
 	class LastMove {
 		String player;
 		int[][] last_moves;
@@ -150,4 +144,24 @@ class GameInfo {
 class MoveResponse {
 	String status;
 	String data;
+}
+
+class Tile {
+	String color;
+	Integer row;
+	Integer column;
+	Boolean king;
+	Integer position;
+
+	public Tile(String color,
+				Integer row,
+				Integer column,
+				Boolean king,
+				Integer position){
+		this.color = color;
+		this.row = row;
+		this.column = column;
+		this.king = king;
+		this.position = position;
+	}
 }
