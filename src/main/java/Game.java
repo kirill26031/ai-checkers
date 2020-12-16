@@ -18,7 +18,7 @@ class Game {
 			GameInfo.GIData state = getInfo();
 			while(!state.whose_turn.equals(connection_data.color)){
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(200);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
