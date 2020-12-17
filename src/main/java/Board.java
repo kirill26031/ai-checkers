@@ -10,20 +10,20 @@ import java.util.Map;
 
 public class Board {
     BoardTile[] tiles;
-    HashMap<Integer, Piece> pieces;
+    Piece[] pieces;
     private String bot_color;
 
     public Board(Tile[] board, String bot_color) {
         if (board == null) board = generateDefaultBoard();
         this.bot_color = bot_color;
         tiles = new BoardTile[32];
-        pieces = new HashMap<>();
+        pieces = new Piece[32];
         for (Tile tile : board) {
             tiles[tile.position - 1] = new BoardTile(
                     new Point(tile.row, tile.column),
                     tile.position - 1);
             Piece new_piece = new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), tiles[tile.position - 1]);
-            pieces.put(tile.position - 1, new_piece);
+            pieces[tile.position - 1] = new_piece;
         }
         for (int i = 12; i < 20; ++i)
             tiles[i] = new BoardTile(new Point(i / 4, i % 4), i);
@@ -84,9 +84,12 @@ public class Board {
 
     void updateColor(String new_color) {
         if (!new_color.equals(bot_color)) {
-            for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
-                if (entry.getValue() != null) entry.getValue().side = !entry.getValue().side;
+            for(Piece piece : pieces){
+                if(piece!=null) piece.side = !piece.side;
             }
+//            for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
+//                if (entry.getValue() != null) entry.getValue().side = !entry.getValue().side;
+//            }
         }
     }
 

@@ -43,20 +43,21 @@ public class MinMaxTree {
 //
 //    }
 
-    private HashMap<Integer, Piece> changeStateByMove(HashMap<Integer, Piece> state, Move move) {
-        HashMap<Integer, Piece> copy = new HashMap<>(state);
+    private Piece[] changeStateByMove(Piece[] state, Move move) {
+        Piece[] copy = state.clone();
         if (move.getClass() == JumpMove.class) {
             for (Piece beaten : ((JumpMove) move).beaten_pieces) {
-                copy.remove(beaten.occupied_tile.position_id);
+                copy[beaten.occupied_tile.position_id]=null;
             }
         }
-        Piece moved_piece = copy.remove(move.positions.getFirst()).clone();
-        copy.put(move.positions.getLast(), moved_piece);
+        Piece moved_piece = copy[move.positions.getFirst()].clone();
+        copy[move.positions.getFirst()] = null;
+        copy[move.positions.getLast()] = moved_piece;
         moved_piece.occupied_tile = board.tiles[move.positions.getLast()];
         return copy;
     }
 
-    private ArrayList<Move> getAvailableMoves(HashMap<Integer, Piece> pieces, boolean side) {
+    private ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
         ArrayList<Move> available_moves = new ArrayList<>();
         for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
             Piece piece = entry.getValue();

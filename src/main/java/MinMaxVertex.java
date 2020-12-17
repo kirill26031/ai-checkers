@@ -8,7 +8,7 @@ public class MinMaxVertex implements Cloneable{
     private double value;
     boolean isCalculated;
     public int depth;
-    HashMap<Integer, Piece> current_pieces;
+    Piece[] current_pieces;
     Move move;
 
     public MinMaxVertex(boolean max,
