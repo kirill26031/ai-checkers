@@ -24,7 +24,7 @@ public class Move {
 	public String toString(){
 		StringBuilder start = new StringBuilder("[");
 		start.append(positions.get(0));
-		for(int i=1; i<positions.size(); ++i) start.append(", ").append(positions.get(i));
+		for(int i=1; i<positions.size(); ++i) start.append(", ").append(positions.get(i)+1);
 		start.append(']');
 		return start.toString();
 	}

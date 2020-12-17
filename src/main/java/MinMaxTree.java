@@ -15,18 +15,33 @@ public class MinMaxTree {
         leaves.add(enemy_root);
     }
 
-    void addLayer() {
+    void addLayer() throws OutOfMemoryError {
+        long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        int size_of_Piece_object = 64;
         ArrayList<MinMaxVertex> new_layer = new ArrayList<>(leaves.size() * 2);
         for (MinMaxVertex vertex : leaves) {
+//            int size_of_HashMap_object = vertex.current_pieces.size()*(size_of_Piece_object+16)+32*24+4*32;
+//            int size_of_MinMaxVertex_object = 1+4+4+8+1+4+size_of_HashMap_object+4+2*16;
+            int size_of_MinMaxVertex_object = 1400;
+            if(Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object*8) throw new OutOfMemoryError("There's no more memory!");
             ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, !vertex.getFather().isMax());
             for (Move move : possible_moves) {
                 MinMaxVertex new_v = new MinMaxVertex(vertex.getFather().isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
                 new_layer.add(new_v);
                 vertex.addChild(new_v);
             }
+            vertex.current_pieces=null;
         }
         leaves = new_layer;
+        long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+//        System.out.println("Free memory: "+Runtime.getRuntime().freeMemory());
+        System.out.println("Added memory: "+(current_memory_used - memory_used)+
+                " \nFor each vertex: "+(current_memory_used - memory_used)/leaves.size());
     }
+
+//    Move bestMove(){
+//
+//    }
 
     private HashMap<Integer, Piece> changeStateByMove(HashMap<Integer, Piece> state, Move move) {
         HashMap<Integer, Piece> copy = new HashMap<>(state);
@@ -41,7 +56,7 @@ public class MinMaxTree {
         return copy;
     }
 
-    ArrayList<Move> getAvailableMoves(HashMap<Integer, Piece> pieces, boolean side) {
+    private ArrayList<Move> getAvailableMoves(HashMap<Integer, Piece> pieces, boolean side) {
         ArrayList<Move> available_moves = new ArrayList<>();
         for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
             Piece piece = entry.getValue();

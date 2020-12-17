@@ -14,31 +14,35 @@ class Game {
 	Game(){
 		Board board = new Board(null, "RED");
 		MinMaxTree minMaxTree = new MinMaxTree(board, true);
-		minMaxTree.addLayer();
-		minMaxTree.addLayer();
-		minMaxTree.addLayer();
-		minMaxTree.addLayer();
-		minMaxTree.addLayer();
-		try {
-			SCResponse.SCRData connection_data = connectToServer(team_name);
-			board.updateColor(connection_data.color);
-
-			GameInfo.GIData state = getInfo();
-			while(!state.whose_turn.equals(connection_data.color)){
-				try {
-					Thread.sleep(200);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				state = getInfo();
+		try{
+			for(int i=0; i<100; ++i){
+				System.out.println(i+"");
+				minMaxTree.addLayer();
 			}
-			sendMove(connection_data.token, new Move(9, 13));
-			getInfo();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+		catch (OutOfMemoryError error){
+			System.out.println("We need more resources");
+		}
+//		try {
+//			SCResponse.SCRData connection_data = connectToServer(team_name);
+//			board.updateColor(connection_data.color);
+//
+//			GameInfo.GIData state = getInfo();
+//			while(!state.whose_turn.equals(connection_data.color)){
+//				try {
+//					Thread.sleep(200);
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//				state = getInfo();
+//			}
+//			sendMove(connection_data.token, new Move(9, 13));
+//			getInfo();
+//		} catch (UnsupportedEncodingException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	private MoveResponse sendMove(String token, Move move) throws IOException {

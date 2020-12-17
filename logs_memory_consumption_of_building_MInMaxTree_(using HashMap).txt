@@ -1,0 +1,25 @@
+0
+Added memory: 0
+For each vertex: 0
+1
+Added memory: 0
+For each vertex: 0
+2
+Added memory: 838904
+For each vertex: 2213
+3
+Added memory: 5872216
+For each vertex: 2044
+4
+Added memory: 28620632
+For each vertex: 1213
+5
+Added memory: 262671416
+For each vertex: 1388
+6
+Added memory: 2056257536
+For each vertex: 1297
+7
+We need more resources
+
+Process finished with exit code 0
