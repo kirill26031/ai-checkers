@@ -34,9 +34,6 @@ class Game {
 
 			state = getInfo();
 			MinMaxTree minMaxTree = new MinMaxTree(board, state.whose_turn.equals(connection_data.color));
-			minMaxTree.addLayer(1000);
-			minMaxTree.addLayer(1000);
-			minMaxTree.evaluate();
 			TimerTask repeatedRequest = new TimerTask() {
 				public void run() {
 					try {
@@ -47,11 +44,11 @@ class Game {
 				}
 			};
 			Timer timer = new Timer("Timer");
-			long request_period = 200;
+			long request_period = 500;
 			timer.schedule(repeatedRequest, request_period, request_period);
 
 			long turn_deadline;
-			while (!state.is_finished) {
+			while (!state.is_finished && state.winner == null) {
 				if (!state.whose_turn.equals(connection_data.color)) {
 					try {
 						minMaxTree.addLayer(System.currentTimeMillis() + request_period);
@@ -59,13 +56,12 @@ class Game {
 						System.out.println("We need more resources!");
 					}
 				} else {
-					timer.cancel();
-					minMaxTree.updateByEnemysMove(new Move(state.last_move));
+					if (state.last_move != null) minMaxTree.updateByEnemysMove(new Move(state.last_move));
 					if (!queue_of_moves.isEmpty()) {
 						sendMove(connection_data.token, queue_of_moves.pollFirst());
 						break;
 					}
-					long time_to_send = 300;
+					long time_to_send = 800;
 //					Timer response_timer = new Timer("Response Timer");
 //					response_timer.schedule(new TimerTask() {
 //						@Override
@@ -90,12 +86,15 @@ class Game {
 						}
 					}
 					next_move = minMaxTree.evaluate();
-					if (next_move.positions.size() > 2) queue_of_moves = generateQueue(next_move);
-					sendMove(connection_data.token, queue_of_moves.pollFirst());
-					timer.schedule(repeatedRequest, 0, request_period);
+					if (next_move.positions.size() > 2){
+						queue_of_moves = generateQueue(next_move);
+						sendMove(connection_data.token, queue_of_moves.pollFirst());
+					}
+					else sendMove(connection_data.token, next_move);
 				}
-
 			}
+			timer.cancel();
+			System.out.println();
 
 			getInfo();
 		} catch (IOException e) {
@@ -122,13 +121,13 @@ class Game {
 		connection.setRequestProperty("Authorization", "Token " + token);
 
 		Gson gson = new GsonBuilder()
-				.registerTypeAdapter(Move.class, MoveAdapter.class)
-				.setPrettyPrinting()
+				.registerTypeAdapter(Move.class, new MoveAdapter())
 				.create();
 //		String serialized_move = String.format("{\n    \"move\": %s\n}", move.toString());
 //		System.out.println(serialized_move);
+		String stringified = String.format("{\n    \"move\": %s\n}", move.toString());
 		try (OutputStream os = connection.getOutputStream()) {
-			byte[] input = gson.toJson(move).getBytes(charset);
+			byte[] input = stringified.getBytes(charset);
 			os.write(input, 0, input.length);
 		}
 

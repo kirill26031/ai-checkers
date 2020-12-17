@@ -56,7 +56,7 @@ class MoveAdapter implements JsonSerializer<Move> {
 
 		JsonObject obj = new JsonObject();
 
-		obj.addProperty("move", move.toString());
+		obj.addProperty("move", String.format("{\n    \"move\": %s\n}", move.toString()));
 		return obj;
 	}
 }

@@ -56,6 +56,9 @@ public class MinMaxTree {
 				copy[beaten.occupied_tile.position_id] = null;
 			}
 		}
+		if(copy[move.positions.getFirst()] == null){
+			System.out.println("err");
+		}
 		Piece moved_piece = copy[move.positions.getFirst()].clone();
 		copy[move.positions.getFirst()] = null;
 		copy[move.positions.getLast()] = moved_piece;
@@ -100,8 +103,8 @@ public class MinMaxTree {
 							getAllAvailableJumpMovesFrom(changed_piece, a_dir_c, changeStateByMove(pieces, new_move), side);
 					if (possible_next_moves.isEmpty()) possible_moves.add(new_move);
 					for (JumpMove next_move : possible_next_moves) {
-						next_move.positions.addLast(new_move.positions.getFirst());
-						next_move.beaten_pieces.addLast(new_move.beaten_pieces.getFirst());
+						next_move.positions.addFirst(new_move.positions.getFirst());
+						next_move.beaten_pieces.addFirst(new_move.beaten_pieces.getFirst());
 						possible_moves.add(next_move);
 					}
 				}
