@@ -5,22 +5,25 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Board {
     BoardTile[] tiles;
-    ArrayList<Piece> pieces;
+    HashMap<Integer, Piece> pieces;
     private String bot_color;
 
     public Board(Tile[] board, String bot_color) {
         if (board == null) board = generateDefaultBoard();
         this.bot_color = bot_color;
         tiles = new BoardTile[32];
-        pieces = new ArrayList<>(24);
+        pieces = new HashMap<>();
         for (Tile tile : board) {
-            pieces.add(new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), null));
+            Piece new_piece = new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), null);
+            pieces.put(tile.position - 1, new_piece);
             tiles[tile.position - 1] = new BoardTile(
                     new Point(tile.row, tile.column),
-                    pieces.get(pieces.size()-1),
+                    new_piece,
                     tile.position - 1);
             tiles[tile.position - 1].piece.occupied_tile = tiles[tile.position - 1];
         }
@@ -83,7 +86,9 @@ public class Board {
 
     void updateColor(String new_color) {
         if (!new_color.equals(bot_color)) {
-            for (Piece piece : pieces) if (piece != null) piece.side = !piece.side;
+            for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
+                if (entry.getValue() != null) entry.getValue().side = !entry.getValue().side;
+            }
         }
     }
 

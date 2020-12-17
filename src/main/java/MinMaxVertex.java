@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MinMaxVertex implements Cloneable{
     private boolean max;
@@ -7,12 +8,12 @@ public class MinMaxVertex implements Cloneable{
     private double value;
     boolean isCalculated;
     public int depth;
-    ArrayList<Piece> current_pieces;
+    HashMap<Integer, Piece> current_pieces;
 
     public MinMaxVertex(boolean max,
                         MinMaxVertex father,
                         ArrayList<MinMaxVertex> children,
-                        ArrayList<Piece> current_pieces
+                        HashMap<Integer, Piece> current_pieces
     ){
         this.max = max;
         this.father = father;
@@ -77,7 +78,7 @@ public class MinMaxVertex implements Cloneable{
     }
 
     public boolean isEvaluated() {
-        return !(Double.isNaN(value));
+        return isCalculated;
     }
 
     public void addChild(MinMaxVertex enemy_root) {

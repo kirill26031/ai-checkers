@@ -5,17 +5,18 @@ import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class Move {
-	ArrayList<Integer> positions;
+	LinkedList<Integer> positions;
 
 	Move (int from, int to){
-		positions = new ArrayList<>(2);
+		positions = new LinkedList<>();
 		positions.add(from);
 		positions.add(to);
 	}
 
-	Move(ArrayList<Integer> positions){
+	Move(LinkedList<Integer> positions){
 		this.positions=positions;
 	}
 
@@ -38,5 +39,19 @@ class MoveAdapter implements JsonSerializer<Move> {
 
 		obj.addProperty("move", move.toString());
 		return obj;
+	}
+}
+
+class JumpMove extends Move{
+	LinkedList<Piece> beaten_pieces = new LinkedList<>();
+
+	JumpMove(int from, int to, Piece beaten) {
+		super(from, to);
+		beaten_pieces.add(beaten);
+	}
+
+	JumpMove(LinkedList<Integer> positions, ArrayList<Piece> pieces) {
+		super(positions);
+		beaten_pieces.addAll(pieces);
 	}
 }
