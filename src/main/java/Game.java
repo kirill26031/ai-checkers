@@ -15,10 +15,13 @@ class Game {
 		Board board = new Board(null, "RED");
 		MinMaxTree minMaxTree = new MinMaxTree(board, true);
 		try{
-			for(int i=0; i<100; ++i){
+			for(int i=0; i<4; ++i){
 				System.out.println(i+"");
 				minMaxTree.addLayer();
 			}
+			Move next = minMaxTree.evaluate();
+			System.out.println(next);
+//			minMaxTree.changeRootMaxMode(false);
 		}
 		catch (OutOfMemoryError error){
 			System.out.println("We need more resources");
@@ -55,10 +58,14 @@ class Game {
 		String auth_header_value = Base64.getEncoder().encodeToString(("Token "+token).getBytes());
 		connection.setRequestProperty("Authorization", "Token "+token);
 
-		String serialized_move = String.format("{\n    \"move\": %s\n}", move.toString());
-		System.out.println(serialized_move);
+		Gson gson = new GsonBuilder()
+				.registerTypeAdapter(Move.class, MoveAdapter.class)
+				.setPrettyPrinting()
+				.create();
+//		String serialized_move = String.format("{\n    \"move\": %s\n}", move.toString());
+//		System.out.println(serialized_move);
 		try(OutputStream os = connection.getOutputStream()) {
-			byte[] input = serialized_move.getBytes(charset);
+			byte[] input = gson.toJson(move).getBytes(charset);
 			os.write(input, 0, input.length);
 		}
 

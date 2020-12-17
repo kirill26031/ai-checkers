@@ -7,6 +7,7 @@ public class MinMaxVertex implements Cloneable{
     private double value;
     boolean isCalculated;
     public int depth;
+    MinMaxVertex best_child = null;
     Piece[] current_pieces;
     Move move;
 
@@ -85,5 +86,41 @@ public class MinMaxVertex implements Cloneable{
     public void addChild(MinMaxVertex enemy_root) {
         if(children==null) children = new ArrayList<>();
         children.add(enemy_root);
+    }
+
+    public void invertMax() {
+        max = !max;
+        for(MinMaxVertex v : children) v.invertMax();
+    }
+
+    public double evaluate() {
+        isCalculated = true;
+        if(children.isEmpty()){
+            value = calculateFitness(current_pieces, max);
+        }
+        else{
+            value = (max) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+            best_child = null;
+            for(MinMaxVertex child : children){
+                double current_result = child.evaluate();
+                if(max ? (value < current_result) : (value > current_result)){
+                    value = current_result;
+                    best_child = child;
+                }
+            }
+        }
+        return value;
+    }
+
+    private double calculateFitness(Piece[] pieces, boolean side) {
+        int our_sum = 0;
+        int enemy_sum = 0;
+        for(Piece piece : pieces){
+            if(piece != null){
+                if(piece.side == side) our_sum += (piece.king ? MinMaxTree.KING_COST : 1);
+                else enemy_sum += (piece.king ? MinMaxTree.KING_COST : 1);
+            }
+        }
+        return our_sum - enemy_sum;
     }
 }
