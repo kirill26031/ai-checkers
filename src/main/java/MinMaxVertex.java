@@ -47,14 +47,6 @@ public class MinMaxVertex implements Cloneable{
         this.children = children;
     }
 
-//    public MapTile getLocation() {
-//        return location;
-//    }
-//
-//    public void setLocation(MapTile location) {
-//        this.location = location;
-//    }
-
     public MinMaxVertex getFather() {
         return father;
     }
@@ -66,7 +58,7 @@ public class MinMaxVertex implements Cloneable{
     @Override
     public String toString(){
         int length = calculateLength();
-        return ((max) ? "MAX " : "MIN ")+" length: "+length+" Move: "+move.toString();
+        return ((max) ? "MAX " : "MIN ")+" curr_l: "+calculateLength()+" length: "+length+" Move: "+move.toString();
     }
 
     public int calculateLength() {
@@ -122,5 +114,14 @@ public class MinMaxVertex implements Cloneable{
             }
         }
         return our_sum - enemy_sum;
+    }
+
+    public void markLeavesAsDeprecated() {
+        if(!children.isEmpty()){
+            for(MinMaxVertex child : children) child.markLeavesAsDeprecated();
+        }
+        else{
+            father = null;
+        }
     }
 }
