@@ -9,15 +9,17 @@ public class MinMaxVertex implements Cloneable{
     boolean isCalculated;
     public int depth;
     HashMap<Integer, Piece> current_pieces;
+    Move move;
 
     public MinMaxVertex(boolean max,
                         MinMaxVertex father,
-                        ArrayList<MinMaxVertex> children,
-                        HashMap<Integer, Piece> current_pieces
+                        HashMap<Integer, Piece> current_pieces,
+                        Move move
     ){
+        this.move = move;
         this.max = max;
         this.father = father;
-        this.children = children;
+        this.children = new ArrayList<>();
         this.current_pieces = current_pieces;
         this.value = Double.NaN;
         depth = (father==null) ? 0 : father.depth +1;
@@ -64,7 +66,7 @@ public class MinMaxVertex implements Cloneable{
     @Override
     public String toString(){
         int length = calculateLength();
-        return ((max) ? "MAX " : "MIN ")+" length: "+length;
+        return ((max) ? "MAX " : "MIN ")+" length: "+length+" Move: "+move.toString();
     }
 
     public int calculateLength() {

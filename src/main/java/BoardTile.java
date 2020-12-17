@@ -5,10 +5,8 @@ public class BoardTile {
     ArrayList<BoardTile> jump_neighbours;
     Point position;
     int position_id;
-    Piece piece;
 
-    public BoardTile(Point position, Piece piece, int position_id) {
-        this.piece = piece;
+    public BoardTile(Point position, int position_id) {
         this.position = position;
         this.position_id = position_id;
     }

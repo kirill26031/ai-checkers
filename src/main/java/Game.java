@@ -14,6 +14,11 @@ class Game {
 	Game(){
 		Board board = new Board(null, "RED");
 		MinMaxTree minMaxTree = new MinMaxTree(board, true);
+		minMaxTree.addLayer();
+		minMaxTree.addLayer();
+		minMaxTree.addLayer();
+		minMaxTree.addLayer();
+		minMaxTree.addLayer();
 		try {
 			SCResponse.SCRData connection_data = connectToServer(team_name);
 			board.updateColor(connection_data.color);

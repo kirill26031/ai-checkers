@@ -19,16 +19,14 @@ public class Board {
         tiles = new BoardTile[32];
         pieces = new HashMap<>();
         for (Tile tile : board) {
-            Piece new_piece = new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), null);
-            pieces.put(tile.position - 1, new_piece);
             tiles[tile.position - 1] = new BoardTile(
                     new Point(tile.row, tile.column),
-                    new_piece,
                     tile.position - 1);
-            tiles[tile.position - 1].piece.occupied_tile = tiles[tile.position - 1];
+            Piece new_piece = new Piece(tile.king, tile.position - 1, tile.color.equals(bot_color), tiles[tile.position - 1]);
+            pieces.put(tile.position - 1, new_piece);
         }
-        for (int i = 12; i < 24; ++i)
-            tiles[i] = new BoardTile(new Point(i / 4, i % 4), null, i);
+        for (int i = 12; i < 20; ++i)
+            tiles[i] = new BoardTile(new Point(i / 4, i % 4), i);
         for (BoardTile boardTile : tiles) {
             boardTile.neighbours = generateNeighbours(boardTile);
             boardTile.jump_neighbours = generateJumpNeighbours(boardTile);

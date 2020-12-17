@@ -1,9 +1,9 @@
-public class Piece {
+public class Piece implements Cloneable {
     boolean king;
-    int start_position;
+    int start_position; // seems redundant
     boolean side;
     BoardTile occupied_tile;
-    boolean alive;
+    boolean alive; // seems redundant
 
     public Piece(boolean king, int start_position, boolean side, BoardTile occupied_tile) {
         this.alive = true;
@@ -13,4 +13,8 @@ public class Piece {
         this.occupied_tile = occupied_tile;
     }
 
+    @Override
+    public Piece clone(){
+        return new Piece(king, start_position, side, occupied_tile);
+    }
 }

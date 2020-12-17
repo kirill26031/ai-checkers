@@ -7,30 +7,48 @@ public class MinMaxTree {
     boolean isFirst;
 
     public MinMaxTree(Board board, boolean isFirst) {
-        this.isFirst=isFirst;
+        this.isFirst = isFirst;
         this.board = board;
-        root = new MinMaxVertex(!isFirst, null, new ArrayList<>(), board.pieces);
-        MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, new ArrayList<>(), board.pieces);
+        root = new MinMaxVertex(!isFirst, null, board.pieces, null);
+        MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
         root.addChild(enemy_root);
         leaves.add(enemy_root);
     }
 
     void addLayer() {
-        ArrayList<MinMaxVertex> new_layer = new ArrayList<>(leaves.size()*2);
-        for(MinMaxVertex vertex : leaves){
-            ArrayList<Move> possible_moves = getAvailableMoves(vertex.getFather().current_pieces, !isFirst);
-
+        ArrayList<MinMaxVertex> new_layer = new ArrayList<>(leaves.size() * 2);
+        for (MinMaxVertex vertex : leaves) {
+            ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, !vertex.getFather().isMax());
+            for (Move move : possible_moves) {
+                MinMaxVertex new_v = new MinMaxVertex(vertex.getFather().isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
+                new_layer.add(new_v);
+                vertex.addChild(new_v);
+            }
         }
+        leaves = new_layer;
     }
 
-    ArrayList<Move> getAvailableMoves(HashMap<Integer, Piece> pieces, boolean side){
+    private HashMap<Integer, Piece> changeStateByMove(HashMap<Integer, Piece> state, Move move) {
+        HashMap<Integer, Piece> copy = new HashMap<>(state);
+        if (move.getClass() == JumpMove.class) {
+            for (Piece beaten : ((JumpMove) move).beaten_pieces) {
+                copy.remove(beaten.occupied_tile.position_id);
+            }
+        }
+        Piece moved_piece = copy.remove(move.positions.getFirst()).clone();
+        copy.put(move.positions.getLast(), moved_piece);
+        moved_piece.occupied_tile = board.tiles[move.positions.getLast()];
+        return copy;
+    }
+
+    ArrayList<Move> getAvailableMoves(HashMap<Integer, Piece> pieces, boolean side) {
         ArrayList<Move> available_moves = new ArrayList<>();
         for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
             Piece piece = entry.getValue();
             int a_dir_c = allowedDirectionCoefficient(piece);
-            for(BoardTile tile : piece.occupied_tile.neighbours){
-                if(piece.side == side && (piece.king || a_dir_c*(tile.position.row - piece.occupied_tile.position.row) > 0)){
-                    if(pieces.get(tile.position_id) == null){
+            for (BoardTile tile : piece.occupied_tile.neighbours) {
+                if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
+                    if (pieces.get(tile.position_id) == null) {
                         available_moves.add(new Move(piece.occupied_tile.position_id, tile.position_id));
                     }
                 }
@@ -42,26 +60,27 @@ public class MinMaxTree {
 
     private ArrayList<JumpMove> getAllAvailableJumpMovesFrom(Piece piece, int a_dir_c, HashMap<Integer, Piece> pieces, boolean side) {
         ArrayList<JumpMove> possible_moves = new ArrayList<>();
-        for(BoardTile tile : piece.occupied_tile.jump_neighbours){
-            if(piece.side == side && (piece.king || a_dir_c*(tile.position.row - piece.occupied_tile.position.row) > 0)){
+        for (BoardTile tile : piece.occupied_tile.jump_neighbours) {
+            if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
                 Piece possibly_beaten = pieces.get(piece.occupied_tile.getTileBetween(tile).position_id);
-                if(pieces.get(tile.position_id) == null && possibly_beaten != null && possibly_beaten.side != piece.side){
+                if (pieces.get(tile.position_id) == null && possibly_beaten != null && possibly_beaten.side != piece.side) {
                     JumpMove new_move = new JumpMove(piece.occupied_tile.position_id, tile.position_id, possibly_beaten);
                     Piece changed_piece = new Piece(piece.king, piece.start_position, piece.side, tile);
                     // I need recursion to support possible jump-chains
-                    // Also, in order to omit copying entire pieces HashMap (with small changes), I change pieces before recursion, and return it back after.
-                    pieces.replace(piece.occupied_tile.position_id, changed_piece);
-                    pieces.remove(possibly_beaten.occupied_tile.position_id);
-                    ArrayList<JumpMove> possible_next_moves = getAllAvailableJumpMovesFrom(changed_piece, a_dir_c, pieces, side);
-                    if(possible_next_moves.isEmpty()) possible_moves.add(new_move);
-                    for(JumpMove next_move : possible_next_moves){
+//                    // Also, in order to omit copying entire pieces HashMap (with small changes), I change pieces before recursion, and return it back after.
+//                    pieces.replace(piece.occupied_tile.position_id, changed_piece);
+//                    pieces.remove(possibly_beaten.occupied_tile.position_id);
+                    ArrayList<JumpMove> possible_next_moves =
+                            getAllAvailableJumpMovesFrom(changed_piece, a_dir_c, changeStateByMove(pieces, new_move), side);
+                    if (possible_next_moves.isEmpty()) possible_moves.add(new_move);
+                    for (JumpMove next_move : possible_next_moves) {
                         next_move.positions.addFirst(new_move.positions.getFirst());
                         new_move.beaten_pieces.addFirst(new_move.beaten_pieces.getFirst());
                         possible_moves.add(next_move);
                     }
-                    // return pieces to current state
-                    pieces.put(possibly_beaten.occupied_tile.position_id, possibly_beaten);
-                    pieces.replace(piece.occupied_tile.position_id, piece);
+//                    // return pieces to current state
+//                    pieces.put(possibly_beaten.occupied_tile.position_id, possibly_beaten);
+//                    pieces.replace(piece.occupied_tile.position_id, piece);
                 }
             }
         }
