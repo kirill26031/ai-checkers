@@ -22,7 +22,7 @@ public class MinMaxTree {
         for (MinMaxVertex vertex : leaves) {
 //            int size_of_HashMap_object = vertex.current_pieces.size()*(size_of_Piece_object+16)+32*24+4*32;
 //            int size_of_MinMaxVertex_object = 1+4+4+8+1+4+size_of_HashMap_object+4+2*16;
-            int size_of_MinMaxVertex_object = 1400;
+            int size_of_MinMaxVertex_object = 400;
             if(Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object*8) throw new OutOfMemoryError("There's no more memory!");
             ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, !vertex.getFather().isMax());
             for (Move move : possible_moves) {
@@ -34,7 +34,7 @@ public class MinMaxTree {
         }
         leaves = new_layer;
         long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-//        System.out.println("Free memory: "+Runtime.getRuntime().freeMemory());
+        System.out.println("Free memory: "+Runtime.getRuntime().freeMemory());
         System.out.println("Added memory: "+(current_memory_used - memory_used)+
                 " \nFor each vertex: "+(current_memory_used - memory_used)/leaves.size());
     }
@@ -59,12 +59,12 @@ public class MinMaxTree {
 
     private ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
         ArrayList<Move> available_moves = new ArrayList<>();
-        for (Map.Entry<Integer, Piece> entry : pieces.entrySet()) {
-            Piece piece = entry.getValue();
+        for (Piece piece : pieces) {
+            if(piece == null) continue;
             int a_dir_c = allowedDirectionCoefficient(piece);
             for (BoardTile tile : piece.occupied_tile.neighbours) {
                 if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
-                    if (pieces.get(tile.position_id) == null) {
+                    if (pieces[tile.position_id] == null) {
                         available_moves.add(new Move(piece.occupied_tile.position_id, tile.position_id));
                     }
                 }
@@ -74,12 +74,12 @@ public class MinMaxTree {
         return available_moves;
     }
 
-    private ArrayList<JumpMove> getAllAvailableJumpMovesFrom(Piece piece, int a_dir_c, HashMap<Integer, Piece> pieces, boolean side) {
+    private ArrayList<JumpMove> getAllAvailableJumpMovesFrom(Piece piece, int a_dir_c, Piece[] pieces, boolean side) {
         ArrayList<JumpMove> possible_moves = new ArrayList<>();
         for (BoardTile tile : piece.occupied_tile.jump_neighbours) {
             if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
-                Piece possibly_beaten = pieces.get(piece.occupied_tile.getTileBetween(tile).position_id);
-                if (pieces.get(tile.position_id) == null && possibly_beaten != null && possibly_beaten.side != piece.side) {
+                Piece possibly_beaten = pieces[piece.occupied_tile.getTileBetween(tile).position_id];
+                if (pieces[tile.position_id] == null && possibly_beaten != null && possibly_beaten.side != piece.side) {
                     JumpMove new_move = new JumpMove(piece.occupied_tile.position_id, tile.position_id, possibly_beaten);
                     Piece changed_piece = new Piece(piece.king, piece.start_position, piece.side, tile);
                     // I need recursion to support possible jump-chains

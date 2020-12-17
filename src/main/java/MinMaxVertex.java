@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class MinMaxVertex implements Cloneable{
     private boolean max;
@@ -13,7 +12,7 @@ public class MinMaxVertex implements Cloneable{
 
     public MinMaxVertex(boolean max,
                         MinMaxVertex father,
-                        HashMap<Integer, Piece> current_pieces,
+                        Piece[] current_pieces,
                         Move move
     ){
         this.move = move;
