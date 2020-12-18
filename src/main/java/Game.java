@@ -44,37 +44,47 @@ class Game {
 
 			state = getInfo();
 			MinMaxTree minMaxTree = new MinMaxTree(board, state.whose_turn.equals(connection_data.color));
-			minMaxTree.addLayer(1000);
-			minMaxTree.addLayer(1000);
-			TimerTask repeatedRequest = new TimerTask() {
-				public void run() {
-					try {
-						state = getInfo();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			timer = new Timer("Timer");
-			long request_period = 500;
-			timer.schedule(repeatedRequest, request_period, request_period);
+			System.out.println("I built basic tree");
+			minMaxTree.addLayer(System.currentTimeMillis()+1000);
+			System.out.println("I built 1 layer");
+			minMaxTree.addLayer(System.currentTimeMillis()+1000);
+			System.out.println("I built 2 layers");
+//			TimerTask repeatedRequest = new TimerTask() {
+//				public void run() {
+//					try {
+//						state = getInfo();
+//						System.out.println("-------------------------Whose turn: " + state.whose_turn);
+//						System.out.println("-------------------------Time: " + state.available_time);
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					}
+//				}
+//			};
+//			timer = new Timer("Timer");
+//			long request_period = 500;
+//			timer.schedule(repeatedRequest, request_period, request_period);
 
 			long turn_deadline;
+			System.out.println("I'm near loop");
 			while (!state.is_finished && state.winner == null) {
 				try {
 					if (!state.whose_turn.equals(connection_data.color)) {
 						try {
-							minMaxTree.addLayer(System.currentTimeMillis() + request_period);
+//							if(minMaxTree.leaves.get(0).calculateLength()<5)
+//								minMaxTree.addLayer(System.currentTimeMillis() + request_period);
 						} catch (OutOfMemoryError error) {
 							System.out.println("We need more resources!");
+
 						}
 					} else {
-						if (state.last_move != null) minMaxTree.updateByEnemysMove(new Move(state.last_move));
+						System.out.println("It's my turn now");
+						if (state.last_move != null) minMaxTree.updateByMove(new Move(state.last_move), false);
 						if (!queue_of_moves.isEmpty()) {
 							sendMove(connection_data.token, queue_of_moves.pollFirst());
 							break;
 						}
 						long time_to_send = 800;
+						System.out.println("Updated enemy's move");
 //					Timer response_timer = new Timer("Response Timer");
 //					response_timer.schedule(new TimerTask() {
 //						@Override
@@ -91,28 +101,58 @@ class Game {
 						long time_to_eval = ((int) (1000 * state.available_time) - time_to_send) / 2;
 						while (System.currentTimeMillis() < turn_deadline - time_to_eval - time_to_send) {
 							try {
-								minMaxTree.addLayer(
-										Math.min(turn_deadline - time_to_eval - time_to_send,
-												System.currentTimeMillis() + 500));
+								if(minMaxTree.leaves.get(0).calculateLength()<5) {
+									System.out.println("I'm growing tree");
+									long deadline = Math.min(turn_deadline - time_to_eval - time_to_send,
+											System.currentTimeMillis() + 500);
+									minMaxTree.addLayer(deadline);
+									System.out.println("Difference between planned stop time and actual:"+(System.currentTimeMillis()-deadline));
+								}
+								else break;
 							} catch (OutOfMemoryError error) {
 								System.out.println("We need more resources!");
+								break;
 							}
 						}
+
+						System.out.println("Whose turn: " + state.whose_turn);
+						System.out.println("Winner: " + state.winner);
+						System.out.println("Time: " + state.available_time);
+						System.out.println(state.last_move);
+
 						next_move = minMaxTree.evaluate();
+						System.out.println("I just sent: "+next_move);
+						StringBuilder str = new StringBuilder();
+						for(MinMaxVertex v : minMaxTree.root.getChildren().get(0).getChildren()) str.append(v.move.toString()).append(", ");
+						System.out.println(str);
+
+
 						if (next_move.positions.size() > 2) {
 							queue_of_moves = generateQueue(next_move);
 							sendMove(connection_data.token, queue_of_moves.pollFirst());
 						} else sendMove(connection_data.token, next_move);
+						state = getInfo();
+						minMaxTree.updateByMove(next_move, true);
+						System.out.println("Second move sent ");
+						System.out.println("Whose turn: " + state.whose_turn);
+						System.out.println("Time: " + state.available_time);
 					}
 				}
 				catch (IOException e){
 					e.printStackTrace();
 				}
+				state = getInfo();
+				try{
+					Thread.sleep(500);
+				}
+				catch (InterruptedException e){
+					e.printStackTrace();
+				}
 			}
-			timer.cancel();
+//			timer.cancel();
 			System.out.println(state.winner);
 		} catch (Exception e) {
-			timer.cancel();
+//			timer.cancel();
 			e.printStackTrace();
 		}
 	}
@@ -144,6 +184,10 @@ class Game {
 		try (OutputStream os = connection.getOutputStream()) {
 			byte[] input = stringified.getBytes(charset);
 			os.write(input, 0, input.length);
+		}
+
+		if(connection.getResponseCode() == 400){
+			System.out.println("Error 400");
 		}
 
 		InputStream response = connection.getInputStream();
@@ -182,11 +226,11 @@ class Game {
 		Reader reader = new InputStreamReader(response, charset);
 		GameInfo result = new Gson().fromJson(reader, GameInfo.class);
 
-		System.out.println(result.data.status);
-		System.out.println("Whose turn: " + result.data.whose_turn);
-		System.out.println("Winner: " + result.data.winner);
-		System.out.println("Time: " + result.data.available_time);
-		System.out.println(result.data.last_move);
+//		System.out.println(result.data.status);
+//		System.out.println("Whose turn: " + result.data.whose_turn);
+//		System.out.println("Winner: " + result.data.winner);
+//		System.out.println("Time: " + result.data.available_time);
+//		System.out.println(result.data.last_move);
 //		for(GameInfo.Tile tile : result.data.board){
 //			System.out.println("(Pos: "+tile.position+", Color: "+tile.color+")");
 //		}

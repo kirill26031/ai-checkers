@@ -5,7 +5,7 @@ public class MinMaxTree {
 	MinMaxVertex root;
 	private static final int DEFAULT_LEAVES_CAPACITY = 7;
 	ArrayList<MinMaxVertex> leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
-	ArrayList<MinMaxVertex> deapest_leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
+	ArrayList<MinMaxVertex> deepest_leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
 	private int current_leaves_index = 0;
 	boolean isFirst;
 
@@ -14,14 +14,14 @@ public class MinMaxTree {
 	public MinMaxTree(Board board, boolean isFirst) {
 		this.isFirst = isFirst;
 		this.board = board;
-		root = new MinMaxVertex(false, null, board.pieces, null);
-		MinMaxVertex enemy_root = new MinMaxVertex(true, root, board.pieces, null);
+		root = new MinMaxVertex(!isFirst, null, board.pieces, null);
+		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
 		root.addChild(enemy_root);
 		leaves.add(enemy_root);
 	}
 
 	void addLayer(long deadline) throws OutOfMemoryError {
-		if(leaves.get(0).calculateLength() > 5) return;
+//		if(leaves.get(0).calculateLength() > 5) return;
 		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		int size_of_Piece_object = 64;
 		for(; current_leaves_index<leaves.size(); ++current_leaves_index) {
@@ -35,16 +35,16 @@ public class MinMaxTree {
 				throw new OutOfMemoryError("There's no more memory!");
 			long time = System.currentTimeMillis();
 			if(time >= deadline) return;
-			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, !vertex.getFather().isMax());
+			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, vertex.isMax());
 			for (Move move : possible_moves) {
-				MinMaxVertex new_v = new MinMaxVertex(vertex.getFather().isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
-				deapest_leaves.add(new_v);
+				MinMaxVertex new_v = new MinMaxVertex(!vertex.isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
+				deepest_leaves.add(new_v);
 				vertex.addChild(new_v);
 			}
 		}
-		leaves = deapest_leaves;
+		leaves = deepest_leaves;
 		current_leaves_index = 0;
-		deapest_leaves = new ArrayList<>(leaves.size()*8);
+		deepest_leaves = new ArrayList<>(leaves.size()*8);
 		long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
 		System.out.println("Added memory: " + (current_memory_used - memory_used));
@@ -71,18 +71,22 @@ public class MinMaxTree {
 
 	private ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
 		ArrayList<Move> available_moves = new ArrayList<>();
+		ArrayList<Move> jump_moves = new ArrayList<>();
 		for (Piece piece : pieces) {
 			if (piece == null) continue;
 			int a_dir_c = allowedDirectionCoefficient(piece);
-			for (BoardTile tile : piece.occupied_tile.neighbours) {
-				if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
-					if (pieces[tile.position_id] == null) {
-						available_moves.add(new Move(piece.occupied_tile.position_id, tile.position_id));
+			if(jump_moves.isEmpty()){
+				for (BoardTile tile : piece.occupied_tile.neighbours) {
+					if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
+						if (pieces[tile.position_id] == null) {
+							available_moves.add(new Move(piece.occupied_tile.position_id, tile.position_id));
+						}
 					}
 				}
 			}
-			available_moves.addAll(getAllAvailableJumpMovesFrom(piece, a_dir_c, pieces, side));
+			jump_moves.addAll(getAllAvailableJumpMovesFrom(piece, a_dir_c, pieces, side));
 		}
+		if(!jump_moves.isEmpty()) return jump_moves;
 		return available_moves;
 	}
 
@@ -132,18 +136,26 @@ public class MinMaxTree {
 		return root.best_child.best_child.move;
 	}
 
-	public void updateByEnemysMove(Move move) throws IllegalStateException{
-		// should be called only when root is enemy's move
-		if(!root.isMax()) return;
+	public void updateByMove(Move move, boolean side) throws IllegalStateException{
+		if(root.getChildren().isEmpty() || root.getChildren().get(0).getChildren().isEmpty()){
+			System.out.println("problem");
+		}
+		if(root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
 		MinMaxVertex vertex_of_move = null;
-		for(MinMaxVertex v : root.getChildren()){
+		for(MinMaxVertex v : root.getChildren().get(0).getChildren()){
 			if(move.equals(v.move)){
 				vertex_of_move = v;
 				continue;
 			}
 			v.markLeavesAsDeprecated();
 		}
-		if(vertex_of_move == null) throw new IllegalStateException();
-		root = vertex_of_move;
+		if(vertex_of_move == null){
+			throw new IllegalStateException("Move: "+move+" Side: "+side);
+		}
+		root.getChildren().get(0).setChildren(vertex_of_move.getChildren());
+		root.getChildren().get(0).best_child = null;
+		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){
+			child_of_moved.setFather(root.getChildren().get(0));
+		}
 	}
 }

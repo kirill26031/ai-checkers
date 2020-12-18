@@ -39,7 +39,7 @@ public class Move {
 
 	@Override
 	public boolean equals(Object move){
-		if(move.getClass() != Move.class) return false;
+		if(move.getClass() != Move.class && move.getClass() != JumpMove.class) return false;
 		if(positions.size() != ((Move)move).positions.size()) return false;
 		boolean equal = true;
 		for(int i=0; i<positions.size(); ++i){
