@@ -137,9 +137,6 @@ public class MinMaxTree {
 	}
 
 	public void updateByMove(Move move, boolean side) throws IllegalStateException{
-		if(root.getChildren().isEmpty() || root.getChildren().get(0).getChildren().isEmpty()){
-			System.out.println("problem");
-		}
 		if(root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
 		MinMaxVertex vertex_of_move = null;
 		for(MinMaxVertex v : root.getChildren().get(0).getChildren()){
@@ -149,9 +146,7 @@ public class MinMaxTree {
 			}
 			v.markLeavesAsDeprecated();
 		}
-		if(vertex_of_move == null){
-			throw new IllegalStateException("Move: "+move+" Side: "+side);
-		}
+		if(vertex_of_move == null) return;
 		root.getChildren().get(0).setChildren(vertex_of_move.getChildren());
 		root.getChildren().get(0).best_child = null;
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){

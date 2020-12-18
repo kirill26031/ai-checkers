@@ -66,7 +66,7 @@ class Game {
 
 			long turn_deadline;
 			System.out.println("I'm near loop");
-			while (!state.is_finished && state.winner == null) {
+			while (!state.is_finished || state.winner == null) {
 				try {
 					if (!state.whose_turn.equals(connection_data.color)) {
 						try {
