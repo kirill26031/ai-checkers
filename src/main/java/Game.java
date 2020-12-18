@@ -81,7 +81,7 @@ class Game {
 						if (state.last_move != null) minMaxTree.updateByMove(new Move(state.last_move), false);
 						if (!queue_of_moves.isEmpty()) {
 							sendMove(connection_data.token, queue_of_moves.pollFirst());
-							break;
+							continue;
 						}
 						long time_to_send = 800;
 						System.out.println("Updated enemy's move");
@@ -142,6 +142,7 @@ class Game {
 					e.printStackTrace();
 				}
 				state = getInfo();
+				if(state.is_finished) System.out.println("Game finished! Winner: "+state.winner);
 				try{
 					Thread.sleep(500);
 				}
@@ -150,7 +151,6 @@ class Game {
 				}
 			}
 //			timer.cancel();
-			System.out.println(state.winner);
 		} catch (Exception e) {
 //			timer.cancel();
 			e.printStackTrace();

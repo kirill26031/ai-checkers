@@ -2,6 +2,7 @@ import java.util.*;
 
 public class MinMaxTree {
 	Board board;
+	Piece[] current_pieces;
 	MinMaxVertex root;
 	private static final int DEFAULT_LEAVES_CAPACITY = 7;
 	ArrayList<MinMaxVertex> leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
@@ -14,6 +15,7 @@ public class MinMaxTree {
 	public MinMaxTree(Board board, boolean isFirst) {
 		this.isFirst = isFirst;
 		this.board = board;
+		current_pieces = board.pieces;
 		root = new MinMaxVertex(!isFirst, null, board.pieces, null);
 		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
 		root.addChild(enemy_root);
@@ -138,6 +140,7 @@ public class MinMaxTree {
 
 	public void updateByMove(Move move, boolean side) throws IllegalStateException{
 		if(root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
+		if(current_pieces[move.positions.get(0)] == null || current_pieces[move.positions.get(0)].side != side) return;
 		MinMaxVertex vertex_of_move = null;
 		for(MinMaxVertex v : root.getChildren().get(0).getChildren()){
 			if(move.equals(v.move)){
@@ -146,7 +149,10 @@ public class MinMaxTree {
 			}
 			v.markLeavesAsDeprecated();
 		}
-		if(vertex_of_move == null) return;
+		if(vertex_of_move == null) {
+			throw new IllegalStateException(move.toString());
+		}
+		current_pieces = vertex_of_move.current_pieces;
 		root.getChildren().get(0).setChildren(vertex_of_move.getChildren());
 		root.getChildren().get(0).best_child = null;
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){
