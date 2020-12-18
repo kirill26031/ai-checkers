@@ -7,13 +7,14 @@ import java.util.*;
 
 class Game {
 	private final String url = "http://localhost:8081/";
-	private final String team_name = "Ants";
+	private String team_name = "Ants";
 	private final String charset = "UTF-8";
 	GameInfo.GIData state;
 	Move next_move;
 	Timer timer;
 
-	Game() {
+	Game(String team_name) {
+		this.team_name = team_name;
 		Board board = new Board(null, "RED");
 //		try{
 //			for(int i=0; i<5; ++i){
@@ -30,11 +31,21 @@ class Game {
 		try {
 			LinkedList<Move> queue_of_moves = new LinkedList<>();
 
-			SCResponse.SCRData connection_data = connectToServer(team_name);
+			SCResponse.SCRData connection_data = null;
+			while (connection_data == null){
+				try {
+					connection_data = connectToServer(team_name);
+				}
+				catch (IOException e){
+//					e.printStackTrace();
+				}
+			}
 			board.updateColor(connection_data.color);
 
 			state = getInfo();
 			MinMaxTree minMaxTree = new MinMaxTree(board, state.whose_turn.equals(connection_data.color));
+			minMaxTree.addLayer(1000);
+			minMaxTree.addLayer(1000);
 			TimerTask repeatedRequest = new TimerTask() {
 				public void run() {
 					try {
@@ -50,19 +61,20 @@ class Game {
 
 			long turn_deadline;
 			while (!state.is_finished && state.winner == null) {
-				if (!state.whose_turn.equals(connection_data.color)) {
-					try {
-						minMaxTree.addLayer(System.currentTimeMillis() + request_period);
-					} catch (OutOfMemoryError error) {
-						System.out.println("We need more resources!");
-					}
-				} else {
-					if (state.last_move != null) minMaxTree.updateByEnemysMove(new Move(state.last_move));
-					if (!queue_of_moves.isEmpty()) {
-						sendMove(connection_data.token, queue_of_moves.pollFirst());
-						break;
-					}
-					long time_to_send = 800;
+				try {
+					if (!state.whose_turn.equals(connection_data.color)) {
+						try {
+							minMaxTree.addLayer(System.currentTimeMillis() + request_period);
+						} catch (OutOfMemoryError error) {
+							System.out.println("We need more resources!");
+						}
+					} else {
+						if (state.last_move != null) minMaxTree.updateByEnemysMove(new Move(state.last_move));
+						if (!queue_of_moves.isEmpty()) {
+							sendMove(connection_data.token, queue_of_moves.pollFirst());
+							break;
+						}
+						long time_to_send = 800;
 //					Timer response_timer = new Timer("Response Timer");
 //					response_timer.schedule(new TimerTask() {
 //						@Override
@@ -75,28 +87,31 @@ class Game {
 //						}
 //					}, (int) (1000 * state.available_time) - time_to_send);
 //					next_move = minMaxTree.root.best_child.best_child.move;
-					turn_deadline = System.currentTimeMillis() + (int) (1000 * state.available_time);
-					long time_to_eval = ((int) (1000 * state.available_time) - time_to_send) / 2;
-					while (System.currentTimeMillis() < turn_deadline - time_to_eval - time_to_send) {
-						try {
-							minMaxTree.addLayer(
-									Math.min(turn_deadline - time_to_eval - time_to_send,
-											System.currentTimeMillis() + 200));
-						} catch (OutOfMemoryError error) {
-							System.out.println("We need more resources!");
+						turn_deadline = System.currentTimeMillis() + (int) (1000 * state.available_time);
+						long time_to_eval = ((int) (1000 * state.available_time) - time_to_send) / 2;
+						while (System.currentTimeMillis() < turn_deadline - time_to_eval - time_to_send) {
+							try {
+								minMaxTree.addLayer(
+										Math.min(turn_deadline - time_to_eval - time_to_send,
+												System.currentTimeMillis() + 500));
+							} catch (OutOfMemoryError error) {
+								System.out.println("We need more resources!");
+							}
 						}
+						next_move = minMaxTree.evaluate();
+						if (next_move.positions.size() > 2) {
+							queue_of_moves = generateQueue(next_move);
+							sendMove(connection_data.token, queue_of_moves.pollFirst());
+						} else sendMove(connection_data.token, next_move);
 					}
-					next_move = minMaxTree.evaluate();
-					if (next_move.positions.size() > 2){
-						queue_of_moves = generateQueue(next_move);
-						sendMove(connection_data.token, queue_of_moves.pollFirst());
-					}
-					else sendMove(connection_data.token, next_move);
+				}
+				catch (IOException e){
+					e.printStackTrace();
 				}
 			}
 			timer.cancel();
 			System.out.println(state.winner);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			timer.cancel();
 			e.printStackTrace();
 		}

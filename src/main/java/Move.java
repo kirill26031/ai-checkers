@@ -22,9 +22,9 @@ public class Move {
 
 	public Move(GameInfo.LastMove last_move) {
 		positions = new LinkedList<>();
-		positions.add(last_move.last_moves[0][0]);
+		positions.add(last_move.last_moves[0][0]-1);
 		for(int[] m : last_move.last_moves){
-			positions.add(m[1]);
+			positions.add(m[1]-1);
 		}
 	}
 

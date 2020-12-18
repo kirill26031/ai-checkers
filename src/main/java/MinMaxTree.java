@@ -14,13 +14,14 @@ public class MinMaxTree {
 	public MinMaxTree(Board board, boolean isFirst) {
 		this.isFirst = isFirst;
 		this.board = board;
-		root = new MinMaxVertex(!isFirst, null, board.pieces, null);
-		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
+		root = new MinMaxVertex(false, null, board.pieces, null);
+		MinMaxVertex enemy_root = new MinMaxVertex(true, root, board.pieces, null);
 		root.addChild(enemy_root);
 		leaves.add(enemy_root);
 	}
 
 	void addLayer(long deadline) throws OutOfMemoryError {
+		if(leaves.get(0).calculateLength() > 5) return;
 		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		int size_of_Piece_object = 64;
 		for(; current_leaves_index<leaves.size(); ++current_leaves_index) {
