@@ -142,7 +142,10 @@ class Game {
 					e.printStackTrace();
 				}
 				state = getInfo();
-				if(state.is_finished) System.out.println("Game finished! Winner: "+state.winner);
+				if(state.is_finished){
+					System.out.println("Game finished! Winner: "+state.winner);
+					break;
+				}
 				try{
 					Thread.sleep(500);
 				}
