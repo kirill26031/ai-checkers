@@ -11,6 +11,7 @@ class Game {
 	private final String charset = "UTF-8";
 	GameInfo.GIData state;
 	Move next_move;
+	Timer timer;
 
 	Game() {
 		Board board = new Board(null, "RED");
@@ -43,7 +44,7 @@ class Game {
 					}
 				}
 			};
-			Timer timer = new Timer("Timer");
+			timer = new Timer("Timer");
 			long request_period = 500;
 			timer.schedule(repeatedRequest, request_period, request_period);
 
@@ -94,10 +95,9 @@ class Game {
 				}
 			}
 			timer.cancel();
-			System.out.println();
-
-			getInfo();
+			System.out.println(state.winner);
 		} catch (IOException e) {
+			timer.cancel();
 			e.printStackTrace();
 		}
 	}
