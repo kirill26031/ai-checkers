@@ -36,6 +36,7 @@ public class Network {
         }
 
         if (connection.getResponseCode() == 400) {
+            System.out.println(move);
             System.out.println("Error 400");
         }
 

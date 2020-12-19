@@ -6,7 +6,7 @@ import java.net.*;
 import java.util.*;
 
 class Game {
-    private static final int MAX_LAYERS_DEPTH = 7;
+    private static final int MAX_LAYERS_DEPTH = 8;
     GameInfo.GIData state;
     SCResponse.SCRData connection_data;
     Network network;
@@ -77,11 +77,17 @@ class Game {
 //			response_timer.schedule(send_move, 0, 300);
 
             System.out.println("I'm near loop");
-            while (!state.is_finished || state.winner == null) {
+            while (!state.is_finished && state.winner == null) {
                 try {
                     state = network.getInfo();
                     if (!state.whose_turn.equals(connection_data.color)) {
                         isMoveSent = false;
+                        try{
+                        	Thread.sleep(500);
+						}
+						catch(Exception e){
+                        	e.printStackTrace();
+						}
                         try {
 //							if(minMaxTree.leaves.get(0).calculateLength()<MAX_LAYERS_DEPTH){
 //                                minMaxTree.addLayer(System.currentTimeMillis() + 200);
@@ -103,7 +109,11 @@ class Game {
                         Move next_move = minMaxTree.evaluate(2);
 //                        next_move = minMaxTree.evaluate(1000);
                         for(int i=3; i<=minMaxTree.leaves.get(0).calculateLength(); ++i){
-                            if(System.currentTimeMillis() < deadline_to_send_move) sendMoveAndUpdateTree(next_move, minMaxTree);
+                            if(System.currentTimeMillis() >= deadline_to_send_move){
+								queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
+								isMoveSent=true;
+                            	continue;
+							}
                             next_move = minMaxTree.evaluate(i);
                         }
                         while (System.currentTimeMillis() < deadline_to_send_move) {
@@ -121,11 +131,8 @@ class Game {
                             }
                         }
 
-                        if (next_move.positions.size() > 2) {
-                            queue_of_moves = generateQueue(next_move);
-                            network.sendMove(connection_data.token, queue_of_moves.pollFirst());
-                            minMaxTree.updateByMove(next_move, true);
-                        } else sendMoveAndUpdateTree(next_move, minMaxTree);
+						queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
+						isMoveSent=true;
 
                         state = network.getInfo();
                         System.out.println("Whose turn: " + state.whose_turn);
@@ -145,6 +152,12 @@ class Game {
                     System.out.println("Game finished! Winner: " + state.winner);
                     break;
                 }
+				try{
+					Thread.sleep(200);
+				}
+				catch(Exception e){
+					e.printStackTrace();
+				}
             }
 //			timer.cancel();
         } catch (Exception e) {
@@ -153,7 +166,17 @@ class Game {
         }
     }
 
-    private void sendMoveAndUpdateTree(Move move, MinMaxTree minMaxTree) throws IOException, ConnectException{
+    private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree minMaxTree) throws IOException{
+		if (next_move.positions.size() > 2) {
+			LinkedList<Move> queue_of_moves = generateQueue(next_move);
+			network.sendMove(connection_data.token, queue_of_moves.pollFirst());
+			minMaxTree.updateByMove(next_move, true);
+			return queue_of_moves;
+		} else sendMoveAndUpdateTree(next_move, minMaxTree);
+		return new LinkedList<>();
+	}
+
+    private void sendMoveAndUpdateTree(Move move, MinMaxTree minMaxTree) throws IOException{
         network.sendMove(connection_data.token, move);
         minMaxTree.updateByMove(move, true);
     }
