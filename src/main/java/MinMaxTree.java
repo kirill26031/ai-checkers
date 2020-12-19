@@ -24,7 +24,7 @@ public class MinMaxTree {
 		addLayer(System.currentTimeMillis()+1000);
 	}
 
-	void addLayer(long deadline) throws OutOfMemoryError {
+	boolean addLayer(long deadline) throws OutOfMemoryError {
 //		final int size_of_MinMaxVertex_object = 400;
 //		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 //		int size_of_Piece_object = 64;
@@ -37,7 +37,7 @@ public class MinMaxTree {
 //			if (Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object * 8)
 //				throw new OutOfMemoryError("There's no more memory!");
 			long time = System.currentTimeMillis();
-			if(time >= deadline) return;
+			if(time >= deadline) return false;
 			vertex.setAsNotEvaluated();
 			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, vertex.isMax());
 			for (Move move : possible_moves) {
@@ -52,6 +52,7 @@ public class MinMaxTree {
 //		long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 //		System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
 //		System.out.println("Added memory: " + (current_memory_used - memory_used));
+		return true;
 	}
 
 	private Piece[] changeStateByMove(Piece[] state, Move move) {
