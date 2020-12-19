@@ -6,7 +6,7 @@ import java.net.*;
 import java.util.*;
 
 class Game {
-    private static final int MAX_LAYERS_DEPTH = 8;
+    private static final int MAX_LAYERS_DEPTH = 9;
     GameInfo.GIData state;
     SCResponse.SCRData connection_data;
     Network network;
@@ -49,7 +49,7 @@ class Game {
 //            timer.schedule(repeatedRequest, request_period, request_period);
 
             long turn_deadline;
-            long time_to_send = 2000;
+            long time_to_send = 200;
 
 //			Timer response_timer = new Timer("Response Timer");
 //			TimerTask send_move = new TimerTask() {
@@ -83,7 +83,7 @@ class Game {
                     if (!state.whose_turn.equals(connection_data.color)) {
                         isMoveSent = false;
                         try{
-                        	Thread.sleep(500);
+                        	Thread.sleep(100);
 						}
 						catch(Exception e){
                         	e.printStackTrace();
@@ -155,7 +155,7 @@ class Game {
                     break;
                 }
 				try{
-					Thread.sleep(200);
+//					Thread.sleep(200);
 				}
 				catch(Exception e){
 					e.printStackTrace();
