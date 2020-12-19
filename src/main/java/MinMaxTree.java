@@ -40,6 +40,7 @@ public class MinMaxTree {
 			if(time >= deadline) return false;
 			vertex.setAsNotEvaluated();
 			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, vertex.isMax());
+			if (possible_moves.isEmpty()) continue;
 			for (Move move : possible_moves) {
 				MinMaxVertex new_v = new MinMaxVertex(!vertex.isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
 				deepest_leaves.add(new_v);
@@ -74,7 +75,7 @@ public class MinMaxTree {
 		return copy;
 	}
 
-	private ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
+	ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
 		ArrayList<Move> available_moves = new ArrayList<>();
 		ArrayList<Move> jump_moves = new ArrayList<>();
 		for (Piece piece : pieces) {
@@ -143,16 +144,18 @@ public class MinMaxTree {
 		);
 		long time_diff = System.currentTimeMillis()-start_time;
 		System.out.println("Evaluation time: "+time_diff+"(ms)");
-		System.out.println("Level: "+Math.min(leaves.get(0).calculateLength(), max_depth));
-		System.out.println(
-				(!leaves.isEmpty() ? ("Leaves of depth "+leaves.get(0).calculateLength()+": "+leaves.size()) : ("")) +
-				(!deepest_leaves.isEmpty() ? ("Leaves of depth "+deepest_leaves.get(0).calculateLength()+": "+deepest_leaves.size()) : (""))
-				);
+		if(!leaves.isEmpty()) {
+			System.out.println("Level: " + Math.min(leaves.get(0).calculateLength(), max_depth));
+			System.out.println(
+					(!leaves.isEmpty() ? ("Leaves of depth " + leaves.get(0).calculateLength() + ": " + leaves.size()) : ("")) +
+							(!deepest_leaves.isEmpty() ? ("Leaves of depth " + deepest_leaves.get(0).calculateLength() + ": " + deepest_leaves.size()) : (""))
+			);
+		}
 		return root.best_child.best_child.move;
 	}
 
 	public void updateByMove(Move move, boolean side) throws IllegalStateException{
-		if(root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
+		if(root.getChildren().get(0).getChildren().isEmpty() || root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
 		if(current_pieces[move.positions.get(0)] == null || current_pieces[move.positions.get(0)].side != side) return;
 		MinMaxVertex vertex_of_move = null;
 		for(MinMaxVertex v : root.getChildren().get(0).getChildren()){
@@ -166,6 +169,7 @@ public class MinMaxTree {
 			throw new IllegalStateException(move.toString());
 		}
 		current_pieces = vertex_of_move.current_pieces;
+		root.getChildren().get(0).setMax(vertex_of_move.isMax());
 		root.getChildren().get(0).setChildren(vertex_of_move.getChildren());
 		root.getChildren().get(0).evaluate(1);
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){

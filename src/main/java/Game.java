@@ -103,22 +103,24 @@ class Game {
                         if (state.last_move != null) minMaxTree.updateByMove(new Move(state.last_move), false);
                         System.out.println("Updated enemy's move");
                         if (!queue_of_moves.isEmpty()) {
+                            if(isGameFinished(minMaxTree)) continue;
                             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
                             continue;
                         }
-                        Move next_move = minMaxTree.evaluate(2);
+                        Move next_move;
 //                        next_move = minMaxTree.evaluate(1000);
-                        for(int i=3; i<=minMaxTree.leaves.get(0).calculateLength(); ++i){
-                            if(System.currentTimeMillis() >= deadline_to_send_move){
-								queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
-								isMoveSent=true;
-                            	continue;
-							}
-                            next_move = minMaxTree.evaluate(i);
-                        }
+                        next_move = minMaxTree.evaluate(1000);
+//                        for(int i=3; i<=minMaxTree.leaves.get(0).calculateLength(); ++i){
+//                            if(System.currentTimeMillis() >= deadline_to_send_move){
+//								queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
+//								isMoveSent=true;
+//                            	continue;
+//							}
+//                            next_move = minMaxTree.evaluate(i);
+//                        }
                         while (System.currentTimeMillis() < deadline_to_send_move) {
                             try {
-                                if (minMaxTree.leaves.get(0).calculateLength() < MAX_LAYERS_DEPTH) {
+                                if (!minMaxTree.leaves.isEmpty() && minMaxTree.leaves.get(0).calculateLength() < MAX_LAYERS_DEPTH) {
                                     System.out.println("I'm growing tree");
                                     long deadline = deadline_to_send_move;
                                     minMaxTree.addLayer(deadline);
@@ -130,8 +132,8 @@ class Game {
                                 break;
                             }
                         }
-
-						queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
+                        // check if it is last move
+                        queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
 						isMoveSent=true;
 
                         state = network.getInfo();
@@ -169,12 +171,23 @@ class Game {
     private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree minMaxTree) throws IOException{
 		if (next_move.positions.size() > 2) {
 			LinkedList<Move> queue_of_moves = generateQueue(next_move);
+            minMaxTree.updateByMove(next_move, true);
 			network.sendMove(connection_data.token, queue_of_moves.pollFirst());
-			minMaxTree.updateByMove(next_move, true);
 			return queue_of_moves;
 		} else sendMoveAndUpdateTree(next_move, minMaxTree);
 		return new LinkedList<>();
 	}
+
+    private boolean isGameFinished(MinMaxTree minMaxTree) {
+        boolean exist_e_piece = false;
+        for(Piece p : minMaxTree.current_pieces){
+            if(p == null) continue;
+            if(!p.side) exist_e_piece = true;
+        }
+        if(!exist_e_piece) return true;
+        ArrayList<Move> available_enemy_moves = minMaxTree.getAvailableMoves(minMaxTree.current_pieces, false);
+        return available_enemy_moves.isEmpty();
+    }
 
     private void sendMoveAndUpdateTree(Move move, MinMaxTree minMaxTree) throws IOException{
         network.sendMove(connection_data.token, move);

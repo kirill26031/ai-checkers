@@ -91,7 +91,7 @@ public class MinMaxVertex implements Cloneable{
 //        if(System.nanoTime() >= deadline) return Double.NEGATIVE_INFINITY;
         if(children.isEmpty() || max_depth==0){
             if(isCalculated) return value;
-            value = calculateFitness(current_pieces, max);
+            value = calculateFitness(current_pieces, !max);
         }
         else{
             value = (max) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
@@ -111,12 +111,12 @@ public class MinMaxVertex implements Cloneable{
         return value;
     }
 
-    private double calculateFitness(Piece[] pieces, boolean side) {
+    private double calculateFitness(Piece[] pieces, boolean our) {
         int our_sum = 0;
         int enemy_sum = 0;
         for(Piece piece : pieces){
             if(piece != null){
-                if(piece.side == side) our_sum += (piece.king ? MinMaxTree.KING_COST : 1);
+                if(piece.side) our_sum += (piece.king ? MinMaxTree.KING_COST : 1);
                 else enemy_sum += (piece.king ? MinMaxTree.KING_COST : 1);
             }
         }
