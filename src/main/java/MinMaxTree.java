@@ -20,23 +20,25 @@ public class MinMaxTree {
 		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
 		root.addChild(enemy_root);
 		leaves.add(enemy_root);
+		addLayer(System.currentTimeMillis()+1000);
+		addLayer(System.currentTimeMillis()+1000);
 	}
 
 	void addLayer(long deadline) throws OutOfMemoryError {
-//		if(leaves.get(0).calculateLength() > 5) return;
-		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-		int size_of_Piece_object = 64;
+//		final int size_of_MinMaxVertex_object = 400;
+//		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+//		int size_of_Piece_object = 64;
 		for(; current_leaves_index<leaves.size(); ++current_leaves_index) {
 			MinMaxVertex vertex = leaves.get(current_leaves_index);
 			//omitting grow of deprecated branches
 			if(vertex.getFather() == null) continue;
 //            int size_of_HashMap_object = vertex.current_pieces.size()*(size_of_Piece_object+16)+32*24+4*32;
 //            int size_of_MinMaxVertex_object = 1+4+4+8+1+4+size_of_HashMap_object+4+2*16;
-			int size_of_MinMaxVertex_object = 400;
-			if (Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object * 8)
-				throw new OutOfMemoryError("There's no more memory!");
+//			if (Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object * 8)
+//				throw new OutOfMemoryError("There's no more memory!");
 			long time = System.currentTimeMillis();
 			if(time >= deadline) return;
+			vertex.setAsNotEvaluated();
 			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, vertex.isMax());
 			for (Move move : possible_moves) {
 				MinMaxVertex new_v = new MinMaxVertex(!vertex.isMax(), vertex, changeStateByMove(vertex.current_pieces, move), move);
@@ -47,9 +49,9 @@ public class MinMaxTree {
 		leaves = deepest_leaves;
 		current_leaves_index = 0;
 		deepest_leaves = new ArrayList<>(leaves.size()*8);
-		long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-		System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
-		System.out.println("Added memory: " + (current_memory_used - memory_used));
+//		long current_memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+//		System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
+//		System.out.println("Added memory: " + (current_memory_used - memory_used));
 	}
 
 	private Piece[] changeStateByMove(Piece[] state, Move move) {
@@ -133,8 +135,18 @@ public class MinMaxTree {
 		}
 	}
 
-	public Move evaluate() {
-		root.evaluate();
+	public Move evaluate(int max_depth) {
+		long start_time = System.currentTimeMillis();
+		root.evaluate(max_depth
+//				,deadline
+		);
+		long time_diff = System.currentTimeMillis()-start_time;
+		System.out.println("Evaluation time: "+time_diff+"(ms)");
+		System.out.println("Level: "+Math.min(leaves.get(0).calculateLength(), max_depth));
+		System.out.println(
+				(!leaves.isEmpty() ? ("Leaves of depth "+leaves.get(0).calculateLength()+": "+leaves.size()) : ("")) +
+				(!deepest_leaves.isEmpty() ? ("Leaves of depth "+deepest_leaves.get(0).calculateLength()+": "+deepest_leaves.size()) : (""))
+				);
 		return root.best_child.best_child.move;
 	}
 
@@ -154,7 +166,7 @@ public class MinMaxTree {
 		}
 		current_pieces = vertex_of_move.current_pieces;
 		root.getChildren().get(0).setChildren(vertex_of_move.getChildren());
-		root.getChildren().get(0).best_child = null;
+		root.getChildren().get(0).evaluate(1);
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){
 			child_of_moved.setFather(root.getChildren().get(0));
 		}

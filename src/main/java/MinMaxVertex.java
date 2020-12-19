@@ -5,7 +5,7 @@ public class MinMaxVertex implements Cloneable{
     private MinMaxVertex father;
     private ArrayList<MinMaxVertex> children;
     private double value;
-    boolean isCalculated;
+    private boolean isCalculated = false;
     public int depth;
     MinMaxVertex best_child = null;
     Piece[] current_pieces;
@@ -85,22 +85,29 @@ public class MinMaxVertex implements Cloneable{
         for(MinMaxVertex v : children) v.invertMax();
     }
 
-    public double evaluate() {
-        isCalculated = true;
-        if(children.isEmpty()){
+    public double evaluate(int max_depth
+//            , long deadline
+    ) {
+//        if(System.nanoTime() >= deadline) return Double.NEGATIVE_INFINITY;
+        if(children.isEmpty() || max_depth==0){
+            if(isCalculated) return value;
             value = calculateFitness(current_pieces, max);
         }
         else{
             value = (max) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
             best_child = null;
             for(MinMaxVertex child : children){
-                double current_result = child.evaluate();
+                double current_result = child.evaluate(max_depth-1
+//                        , deadline
+                );
+//                if(current_result == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
                 if(max ? (value < current_result) : (value > current_result)){
                     value = current_result;
                     best_child = child;
                 }
             }
         }
+        isCalculated = true;
         return value;
     }
 
@@ -123,5 +130,9 @@ public class MinMaxVertex implements Cloneable{
         else{
             father = null;
         }
+    }
+
+    public void setAsNotEvaluated() {
+        isCalculated=false;
     }
 }
