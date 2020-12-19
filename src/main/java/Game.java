@@ -12,7 +12,7 @@ class Game {
     private final String charset = "UTF-8";
     GameInfo.GIData state;
     Move next_move;
-    Timer timer;
+//    Timer timer;
     SCResponse.SCRData connection_data;
     boolean isMoveSent = false;
 
@@ -47,23 +47,47 @@ class Game {
             state = getInfo();
             MinMaxTree minMaxTree = new MinMaxTree(board, state.whose_turn.equals(connection_data.color));
             System.out.println("I built basic tree");
-            TimerTask repeatedRequest = new TimerTask() {
-                public void run() {
-                    try {
-                        state = getInfo();
-						System.out.println("-------------------------Whose turn: " + state.whose_turn);
-						System.out.println("-------------------------Time: " + state.available_time);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            };
-            timer = new Timer("Timer");
-            long request_period = 500;
-            timer.schedule(repeatedRequest, request_period, request_period);
+//            TimerTask repeatedRequest = new TimerTask() {
+//                public void run() {
+//                    try {
+//                        state = getInfo();
+//
+//						System.out.println("-------------------------Whose turn: " + state.whose_turn);
+//						System.out.println("-------------------------Time: " + state.available_time);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            };
+//            timer = new Timer("Timer");
+//            long request_period = 500;
+//            timer.schedule(repeatedRequest, request_period, request_period);
 
             long turn_deadline;
             long time_to_send = 800;
+
+			Timer response_timer = new Timer("Response Timer");
+			TimerTask send_move = new TimerTask() {
+				@Override
+				public void run() {
+					try {
+						if(state.whose_turn.equals(connection_data.color) && !isMoveSent &&
+								(int)(state.available_time*1000) < time_to_send){
+							isMoveSent = true;
+							sendMove(connection_data.token, next_move);
+							minMaxTree.updateByMove(next_move, true);
+							System.out.println("Second move sent ");
+							System.out.println("Whose turn: " + state.whose_turn);
+							System.out.println("Time: " + state.available_time);
+						}
+						state = getInfo();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			response_timer.schedule(send_move, 0, 300);
+
             System.out.println("I'm near loop");
             while (!state.is_finished || state.winner == null) {
                 try {
@@ -88,25 +112,6 @@ class Game {
                             continue;
                         }
 
-
-                        Timer response_timer = new Timer("Response Timer");
-                        TimerTask send_move = new TimerTask() {
-                            @Override
-                            public void run() {
-                                try {
-                                    isMoveSent = true;
-                                    sendMove(connection_data.token, next_move);
-                                    minMaxTree.updateByMove(next_move, true);
-                                    System.out.println("Second move sent ");
-                                    System.out.println("Whose turn: " + state.whose_turn);
-                                    System.out.println("Time: " + state.available_time);
-                                    state = getInfo();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        };
-                        response_timer.schedule(send_move, 5000);
                         for(int i=2; i<minMaxTree.leaves.get(0).calculateLength(); ++i){
                             next_move = minMaxTree.evaluate(i);
                         }
@@ -148,7 +153,7 @@ class Game {
                     e.printStackTrace();
                 }
                 if (state.is_finished) {
-                    timer.cancel();
+                    response_timer.cancel();
                     System.out.println("Game finished! Winner: " + state.winner);
                     break;
                 }
