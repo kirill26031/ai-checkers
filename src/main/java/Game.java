@@ -125,7 +125,7 @@ class Game {
                                     long deadline = deadline_to_send_move;
                                     minMaxTree.addLayer(deadline);
                                     System.out.println("Difference between planned stop time and actual:" + (deadline - System.currentTimeMillis()));
-                                    next_move = minMaxTree.evaluate(Integer.MAX_VALUE);
+                                    next_move = minMaxTree.evaluate(getMaxDepth(deadline_to_send_move-System.currentTimeMillis()));
                                 } else break;
                             } catch (OutOfMemoryError error) {
                                 System.out.println("We need more resources!");
@@ -166,6 +166,13 @@ class Game {
 //			timer.cancel();
             e.printStackTrace();
         }
+    }
+
+    private int getMaxDepth(long l) {
+        if(l <= 500) return 4;
+        if(l<= 1000) return 6;
+        if(l <= 2000) return 7;
+        return 8;
     }
 
     private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree minMaxTree) throws IOException{
