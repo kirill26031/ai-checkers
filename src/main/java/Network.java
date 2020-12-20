@@ -20,15 +20,12 @@ public class Network {
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("Content-Type", "application/json; " + charset);
         connection.setDoOutput(true);
-//		String encoded_token = Base64.getEncoder().encodeToString(token.getBytes());
         String auth_header_value = Base64.getEncoder().encodeToString(("Token " + token).getBytes());
         connection.setRequestProperty("Authorization", "Token " + token);
 
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Move.class, new MoveAdapter())
                 .create();
-//		String serialized_move = String.format("{\n    \"move\": %s\n}", move.toString());
-//		System.out.println(serialized_move);
         String stringified = String.format("{\n    \"move\": %s\n}", move.toString());
         try (OutputStream os = connection.getOutputStream()) {
             byte[] input = stringified.getBytes(charset);
@@ -75,15 +72,6 @@ public class Network {
         InputStream response = connection.getInputStream();
         Reader reader = new InputStreamReader(response, charset);
         GameInfo result = new Gson().fromJson(reader, GameInfo.class);
-
-//		System.out.println(result.data.status);
-//		System.out.println("Whose turn: " + result.data.whose_turn);
-//		System.out.println("Winner: " + result.data.winner);
-//		System.out.println("Time: " + result.data.available_time);
-//		System.out.println(result.data.last_move);
-//		for(GameInfo.Tile tile : result.data.board){
-//			System.out.println("(Pos: "+tile.position+", Color: "+tile.color+")");
-//		}
 
         return result.data;
     }

@@ -1,20 +1,21 @@
 import java.util.*;
 
 public class MinMaxTree {
-	Board board;
-	Piece[] current_pieces;
-	MinMaxVertex root;
-	private static final int DEFAULT_LEAVES_CAPACITY = 7;
-	ArrayList<MinMaxVertex> leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
-	ArrayList<MinMaxVertex> deepest_leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
-	private int current_leaves_index = 0;
-	boolean isFirst;
+	static Board board;
+	static Piece[] current_pieces;
+	static MinMaxVertex root;
+	static private final int DEFAULT_LEAVES_CAPACITY = 7;
+	static ArrayList<MinMaxVertex> leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
+	static ArrayList<MinMaxVertex> deepest_leaves = new ArrayList<>(DEFAULT_LEAVES_CAPACITY);
+	static private int current_leaves_index = 0;
+	static boolean isFirst;
+	static Move lastSentMove = null;
 
-	public static final double KING_COST = 5;
+	static public final double KING_COST = 5;
 
-	public MinMaxTree(Board board, boolean isFirst) {
-		this.isFirst = isFirst;
-		this.board = board;
+	static void initializeMinMaxTree(Board brd,boolean isFst){
+		isFirst = isFst;
+		board = brd;
 		current_pieces = board.pieces;
 		root = new MinMaxVertex(!isFirst, null, board.pieces, null);
 		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
@@ -24,7 +25,9 @@ public class MinMaxTree {
 		addLayer(System.currentTimeMillis()+1000);
 	}
 
-	boolean addLayer(long deadline) throws OutOfMemoryError {
+
+
+	static boolean addLayer(long deadline) throws OutOfMemoryError {
 //		final int size_of_MinMaxVertex_object = 400;
 //		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 //		int size_of_Piece_object = 64;
@@ -56,7 +59,7 @@ public class MinMaxTree {
 		return true;
 	}
 
-	private Piece[] changeStateByMove(Piece[] state, Move move) {
+	static private Piece[] changeStateByMove(Piece[] state, Move move) {
 		Piece[] copy = state.clone();
 		if (move.getClass() == JumpMove.class) {
 			for (Piece beaten : ((JumpMove) move).beaten_pieces) {
@@ -75,7 +78,7 @@ public class MinMaxTree {
 		return copy;
 	}
 
-	ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
+	static ArrayList<Move> getAvailableMoves(Piece[] pieces, boolean side) {
 		ArrayList<Move> available_moves = new ArrayList<>();
 		ArrayList<Move> jump_moves = new ArrayList<>();
 		for (Piece piece : pieces) {
@@ -96,7 +99,7 @@ public class MinMaxTree {
 		return available_moves;
 	}
 
-	private ArrayList<JumpMove> getAllAvailableJumpMovesFrom(Piece piece, int a_dir_c, Piece[] pieces, boolean side) {
+	static private ArrayList<JumpMove> getAllAvailableJumpMovesFrom(Piece piece, int a_dir_c, Piece[] pieces, boolean side) {
 		ArrayList<JumpMove> possible_moves = new ArrayList<>();
 		for (BoardTile tile : piece.occupied_tile.jump_neighbours) {
 			if (piece.side == side && (piece.king || a_dir_c * (tile.position.row - piece.occupied_tile.position.row) > 0)) {
@@ -124,20 +127,20 @@ public class MinMaxTree {
 		return possible_moves;
 	}
 
-	private int allowedDirectionCoefficient(Piece piece) {
+	static private int allowedDirectionCoefficient(Piece piece) {
 		// coefficient which declares in which direction piece may move (according to initial game coordinates)
 		// 1 - for RED
 		// -1 - for BLACK
 		return isFirst == piece.side ? 1 : -1;
 	}
 
-	public void changeRootMaxMode(boolean isMax) {
+	static public void changeRootMaxMode(boolean isMax) {
 		if (isFirst != isMax) {
 			root.invertMax();
 		}
 	}
 
-	public Move evaluate(int max_depth) {
+	static public Move evaluate(int max_depth) {
 		long start_time = System.currentTimeMillis();
 		root.evaluate(max_depth
 //				,deadline
@@ -154,7 +157,7 @@ public class MinMaxTree {
 		return root.best_child.best_child.move;
 	}
 
-	public void updateByMove(Move move, boolean side) throws IllegalStateException{
+	static public void updateByMove(Move move, boolean side) throws IllegalStateException{
 		if(root.getChildren().get(0).getChildren().isEmpty() || root.getChildren().get(0).getChildren().get(0).isMax() == side) return;
 		if(current_pieces[move.positions.get(0)] == null || current_pieces[move.positions.get(0)].side != side) return;
 		MinMaxVertex vertex_of_move = null;
@@ -177,7 +180,7 @@ public class MinMaxTree {
 		}
 	}
 
-	public MinMaxVertex getDeepestBest() {
+	static public MinMaxVertex getDeepestBest() {
 		MinMaxVertex r = root.getChildren().get(0).best_child;
 		while(r.best_child != null) r = r.best_child;
 		return r;
