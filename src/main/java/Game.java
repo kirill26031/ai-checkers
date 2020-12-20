@@ -6,7 +6,7 @@ import java.net.*;
 import java.util.*;
 
 class Game {
-    private static final int MAX_LAYERS_DEPTH = 9;
+    private static final int MAX_LAYERS_DEPTH = 8;
     GameInfo.GIData state;
     SCResponse.SCRData connection_data;
     Network network;
@@ -31,7 +31,7 @@ class Game {
 
             state = network.getInfo();
             MinMaxTree minMaxTree = new MinMaxTree(board, state.whose_turn.equals(connection_data.color));
-            System.out.println("I built basic tree");
+//            System.out.println("I built basic tree");
 //            TimerTask repeatedRequest = new TimerTask() {
 //                public void run() {
 //                    try {
@@ -76,7 +76,7 @@ class Game {
 //			};
 //			response_timer.schedule(send_move, 0, 300);
 
-            System.out.println("I'm near loop");
+//            System.out.println("I'm near loop");
             while (!state.is_finished && state.winner == null) {
                 try {
                     state = network.getInfo();
@@ -101,9 +101,9 @@ class Game {
                         System.out.println("It's my turn now");
                         deadline_to_send_move = System.currentTimeMillis()+(int) (1000 * state.available_time) - time_to_send;
                         if (state.last_move != null) minMaxTree.updateByMove(new Move(state.last_move), false);
-                        System.out.println("Updated enemy's move");
+//                        System.out.println("Updated enemy's move");
                         if (!queue_of_moves.isEmpty()) {
-                            if(isGameFinished(minMaxTree)) continue;
+//                            if(isGameFinished(minMaxTree)) continue;
                             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
                             continue;
                         }
@@ -120,8 +120,8 @@ class Game {
 //                        }
                         while (System.currentTimeMillis() < deadline_to_send_move) {
                             try {
-                                if (!minMaxTree.leaves.isEmpty() && minMaxTree.leaves.get(0).calculateLength() < MAX_LAYERS_DEPTH) {
-                                    System.out.println("I'm growing tree");
+                                if (!minMaxTree.leaves.isEmpty() && minMaxTree.getDeepestBest().calculateLength() < MAX_LAYERS_DEPTH) {
+//                                    System.out.println("I'm growing tree");
                                     long deadline = deadline_to_send_move;
                                     minMaxTree.addLayer(deadline);
                                     System.out.println("Difference between planned stop time and actual:" + (deadline - System.currentTimeMillis()));
@@ -138,20 +138,19 @@ class Game {
 
                         state = network.getInfo();
                         System.out.println("Whose turn: " + state.whose_turn);
-                        System.out.println("Winner: " + state.winner);
-                        System.out.println("Time: " + state.available_time);
-                        System.out.println(state.last_move);
-                        System.out.println("I just sent: " + next_move);
+//                        System.out.println("Winner: " + state.winner);
+//                        System.out.println("Time: " + state.available_time);
+                        System.out.println("Last move: "+state.last_move);
+//                        System.out.println("I just sent: " + next_move);
                         StringBuilder str = new StringBuilder();
                         for (MinMaxVertex v : minMaxTree.root.getChildren().get(0).getChildren())
                             str.append(v.move.toString()).append(", ");
-                        System.out.println(str);
+                        System.out.println("Available enemy moves"+str);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 if (state.is_finished) {
-                    System.out.println("Game finished! Winner: " + state.winner);
                     break;
                 }
 				try{
@@ -166,10 +165,13 @@ class Game {
 //			timer.cancel();
             e.printStackTrace();
         }
+        System.out.println("Game finished! Winner: " + state.winner);
+        System.out.println("Average calc func time in nanoseconds: "+MinMaxVertex.average_1000);
+        System.out.println("Stat from "+MinMaxVertex.amount_of_1000_av*1000+" calculations");
     }
 
     private int getMaxDepth(long l) {
-        if(l <= 500) return 4;
+        if(l <= 500) return 3;
         if(l<= 1000) return 6;
         if(l <= 2000) return 7;
         return 8;

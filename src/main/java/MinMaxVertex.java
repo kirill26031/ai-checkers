@@ -7,6 +7,10 @@ public class MinMaxVertex implements Cloneable{
     private double value;
     private boolean isCalculated = false;
     public int depth;
+    public static int amount_calculated=0;
+    public static long sum_nano=0;
+    public static long average_1000=-1;
+    public static long amount_of_1000_av = 0;
     MinMaxVertex best_child = null;
     Piece[] current_pieces;
     Move move;
@@ -112,6 +116,7 @@ public class MinMaxVertex implements Cloneable{
     }
 
     private double calculateFitness(Piece[] pieces, boolean our) {
+        long start = System.nanoTime();
         int our_sum = 0;
         int enemy_sum = 0;
         for(Piece piece : pieces){
@@ -119,6 +124,14 @@ public class MinMaxVertex implements Cloneable{
                 if(piece.side) our_sum += (piece.king ? MinMaxTree.KING_COST : 1);
                 else enemy_sum += (piece.king ? MinMaxTree.KING_COST : 1);
             }
+        }
+        if(amount_calculated <1000){
+            sum_nano+=(System.nanoTime()-start);
+            amount_calculated++;
+        }
+        else{
+            long aver = sum_nano/1000;
+            average_1000 = (amount_of_1000_av*average_1000+aver)/(++amount_of_1000_av);
         }
         return our_sum - enemy_sum;
     }

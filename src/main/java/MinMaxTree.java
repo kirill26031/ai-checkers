@@ -145,7 +145,7 @@ public class MinMaxTree {
 		long time_diff = System.currentTimeMillis()-start_time;
 		System.out.println("Evaluation time: "+time_diff+"(ms)");
 		if(!leaves.isEmpty()) {
-			System.out.println("Level: " + Math.min(leaves.get(0).calculateLength(), max_depth));
+			System.out.println("Level: " + Math.min(getDeepestBest().calculateLength(), max_depth));
 			System.out.println(
 					(!leaves.isEmpty() ? ("Leaves of depth " + leaves.get(0).calculateLength() + ": " + leaves.size()) : ("")) +
 							(!deepest_leaves.isEmpty() ? ("Leaves of depth " + deepest_leaves.get(0).calculateLength() + ": " + deepest_leaves.size()) : (""))
@@ -175,5 +175,11 @@ public class MinMaxTree {
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){
 			child_of_moved.setFather(root.getChildren().get(0));
 		}
+	}
+
+	public MinMaxVertex getDeepestBest() {
+		MinMaxVertex r = root.getChildren().get(0).best_child;
+		while(r.best_child != null) r = r.best_child;
+		return r;
 	}
 }
