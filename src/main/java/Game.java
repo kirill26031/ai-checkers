@@ -48,14 +48,17 @@ class Game {
                     } else {
 
                         System.out.println("It's my turn now");
+
                         Timer mTimer = new Timer();
                         mTimer.schedule(new SendMoveToServer(network, connection_data.token, queue_of_moves.pollFirst()),
                                 (long) state.available_time - time_to_send);
 
                         if (state.last_move != null) MinMaxTree.updateByMove(new Move(state.last_move), false);
 //                        System.out.println("Updated enemy's move");
+
                         if (!queue_of_moves.isEmpty()) {
                             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
+                            mTimer.cancel();
                             continue;
                         }
                         Move next_move;
@@ -76,14 +79,11 @@ class Game {
                         }
 
                         // check if it is last move
-                        queue_of_moves = analyzeAndSendMove(next_move, MinMaxTree);
+                        queue_of_moves = analyzeAndSendMove(next_move);
 
                         state = network.getInfo();
                         System.out.println("Whose turn: " + state.whose_turn);
-//                        System.out.println("Winner: " + state.winner);
-//                        System.out.println("Time: " + state.available_time);
                         System.out.println("Last move: " + state.last_move);
-//                        System.out.println("I just sent: " + next_move);
                         StringBuilder str = new StringBuilder();
                         for (MinMaxVertex v : MinMaxTree.root.getChildren().get(0).getChildren())
                             str.append(v.move.toString()).append(", ");
@@ -95,15 +95,8 @@ class Game {
                 if (state.is_finished) {
                     break;
                 }
-                try {
-//					Thread.sleep(200);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
             }
-//			timer.cancel();
         } catch (Exception e) {
-//			timer.cancel();
             e.printStackTrace();
         }
         System.out.println("Game finished! Winner: " + state.winner);
@@ -118,13 +111,13 @@ class Game {
         return 8;
     }
 
-    private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree MinMaxTree) throws IOException {
+    private LinkedList<Move> analyzeAndSendMove(Move next_move) throws IOException {
         if (next_move.positions.size() > 2) {
             LinkedList<Move> queue_of_moves = generateQueue(next_move);
             MinMaxTree.updateByMove(next_move, true);
             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
             return queue_of_moves;
-        } else sendMoveAndUpdateTree(next_move, MinMaxTree);
+        } else sendMoveAndUpdateTree(next_move);
         return new LinkedList<>();
     }
 
@@ -143,7 +136,7 @@ class Game {
         return !state.is_finished && isNull(state.winner);
     }
 
-    private void sendMoveAndUpdateTree(Move move, MinMaxTree MinMaxTree) throws IOException {
+    private void sendMoveAndUpdateTree(Move move) throws IOException {
         network.sendMove(connection_data.token, move);
         MinMaxTree.updateByMove(move, true);
     }
@@ -173,7 +166,11 @@ class SendMoveToServer extends TimerTask {
 
     @Override
     public void run() {
-        myNet.sendMove(myToken, myMove);
+        try {
+            myNet.sendMove(myToken, myMove);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 
