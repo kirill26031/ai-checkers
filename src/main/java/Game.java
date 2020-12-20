@@ -12,6 +12,7 @@ class Game {
     Network network;
     boolean isMoveSent = false;
     long deadline_to_send_move = Long.MAX_VALUE;
+    static LinkedList<Move> qmoves = new LinkedList<>();
 
     private TimerTask sendBestMoveToServer;
 
@@ -43,7 +44,7 @@ class Game {
                     if (turnState) {
                         state = network.getInfo();
                         turnState = !state.whose_turn.equals(connection_data.color);
-
+                        System.out.println("Waiting for enemy to move");
                         Thread.sleep(timeBetweenRequests);
                     } else {
 
@@ -58,19 +59,19 @@ class Game {
 
                         if (!queue_of_moves.isEmpty()) {
                             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
+                            System.out.println("I sent a move");
                             mTimer.cancel();
                             continue;
                         }
                         Move next_move;
                         next_move = MinMaxTree.evaluate(1000);
+
                         while (isNull(MinMaxTree.lastSentMove)) {
                             try {
                                 if (!MinMaxTree.leaves.isEmpty() && MinMaxTree.getDeepestBest().calculateLength() < MAX_LAYERS_DEPTH) {
 //                                    System.out.println("I'm growing tree");
-                                    long deadline = deadline_to_send_move;
-                                    MinMaxTree.addLayer(deadline);
-                                    System.out.println("Difference between planned stop time and actual:" + (deadline - System.currentTimeMillis()));
-                                    next_move = MinMaxTree.evaluate(getMaxDepth(deadline_to_send_move - System.currentTimeMillis()));
+                                    MinMaxTree.addLayer();
+                                    next_move = MinMaxTree.evaluate(7);
                                 } else break;
                             } catch (OutOfMemoryError error) {
                                 System.out.println("We need more resources!");
@@ -80,14 +81,15 @@ class Game {
 
                         // check if it is last move
                         queue_of_moves = analyzeAndSendMove(next_move);
+                        MinMaxTree.lastSentMove = null;
 
                         state = network.getInfo();
-                        System.out.println("Whose turn: " + state.whose_turn);
-                        System.out.println("Last move: " + state.last_move);
-                        StringBuilder str = new StringBuilder();
-                        for (MinMaxVertex v : MinMaxTree.root.getChildren().get(0).getChildren())
-                            str.append(v.move.toString()).append(", ");
-                        System.out.println("Available enemy moves" + str);
+//                        System.out.println("Whose turn: " + state.whose_turn);
+//                        System.out.println("Last move: " + state.last_move);
+//                        StringBuilder str = new StringBuilder();
+//                        for (MinMaxVertex v : MinMaxTree.root.getChildren().get(0).getChildren())
+//                            str.append(v.move.toString()).append(", ");
+//                        System.out.println("Available enemy moves" + str);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -104,12 +106,6 @@ class Game {
         System.out.println("Stat from " + MinMaxVertex.amount_of_1000_av * 1000 + " calculations");
     }
 
-    private int getMaxDepth(long l) {
-        if (l <= 500) return 3;
-        if (l <= 1000) return 6;
-        if (l <= 2000) return 7;
-        return 8;
-    }
 
     private LinkedList<Move> analyzeAndSendMove(Move next_move) throws IOException {
         if (next_move.positions.size() > 2) {
@@ -167,10 +163,31 @@ class SendMoveToServer extends TimerTask {
     @Override
     public void run() {
         try {
-            myNet.sendMove(myToken, myMove);
+            if (myMove.positions.size() > 2) {
+                LinkedList<Move> queue_of_moves = generateQueue(myMove);
+                MinMaxTree.updateByMove(myMove, true);
+                myNet.sendMove(myToken, queue_of_moves.pollFirst());
+                Game.qmoves = queue_of_moves;
+            } else sendMoveAndUpdateTree(myMove);
+            Game.qmoves = new LinkedList<>();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void sendMoveAndUpdateTree(Move move) throws IOException {
+        myNet.sendMove(myToken, move);
+        MinMaxTree.lastSentMove = move;
+        MinMaxTree.updateByMove(move, true);
+    }
+
+    private LinkedList<Move> generateQueue(Move move) {
+        LinkedList<Move> res = new LinkedList<>();
+        for (int i = 1; i < move.positions.size(); ++i) {
+            res.add(new Move(move.positions.get(i - 1), move.positions.get(i)));
+        }
+        return res;
     }
 }
 

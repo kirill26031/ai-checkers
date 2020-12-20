@@ -1,5 +1,7 @@
 import java.util.*;
 
+import static java.util.Objects.isNull;
+
 public class MinMaxTree {
 	static Board board;
 	static Piece[] current_pieces;
@@ -21,13 +23,13 @@ public class MinMaxTree {
 		MinMaxVertex enemy_root = new MinMaxVertex(isFirst, root, board.pieces, null);
 		root.addChild(enemy_root);
 		leaves.add(enemy_root);
-		addLayer(System.currentTimeMillis()+1000);
-		addLayer(System.currentTimeMillis()+1000);
+		addLayer();
+		addLayer();
 	}
 
 
 
-	static boolean addLayer(long deadline) throws OutOfMemoryError {
+	static boolean addLayer() throws OutOfMemoryError {
 //		final int size_of_MinMaxVertex_object = 400;
 //		long memory_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 //		int size_of_Piece_object = 64;
@@ -39,8 +41,7 @@ public class MinMaxTree {
 //            int size_of_MinMaxVertex_object = 1+4+4+8+1+4+size_of_HashMap_object+4+2*16;
 //			if (Runtime.getRuntime().freeMemory() <= size_of_MinMaxVertex_object * 8)
 //				throw new OutOfMemoryError("There's no more memory!");
-			long time = System.currentTimeMillis();
-			if(time >= deadline) return false;
+			if(!isNull(lastSentMove)) return false;
 			vertex.setAsNotEvaluated();
 			ArrayList<Move> possible_moves = getAvailableMoves(vertex.current_pieces, vertex.isMax());
 			if (possible_moves.isEmpty()) continue;
