@@ -7,6 +7,7 @@ import java.util.*;
 
 class Game {
     private static final int MAX_LAYERS_DEPTH = 8;
+    int current_layer=2;
     GameInfo.GIData state;
     SCResponse.SCRData connection_data;
     Network network;
@@ -49,7 +50,7 @@ class Game {
 //            timer.schedule(repeatedRequest, request_period, request_period);
 
             long turn_deadline;
-            long time_to_send = 200;
+            long time_to_send = 600;
 
 //			Timer response_timer = new Timer("Response Timer");
 //			TimerTask send_move = new TimerTask() {
@@ -82,12 +83,11 @@ class Game {
                     state = network.getInfo();
                     if (!state.whose_turn.equals(connection_data.color)) {
                         isMoveSent = false;
-                        try{
-                        	Thread.sleep(100);
-						}
-						catch(Exception e){
-                        	e.printStackTrace();
-						}
+                        try {
+                            Thread.sleep(100);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         try {
 //							if(minMaxTree.leaves.get(0).calculateLength()<MAX_LAYERS_DEPTH){
 //                                minMaxTree.addLayer(System.currentTimeMillis() + 200);
@@ -99,53 +99,72 @@ class Game {
                         }
                     } else {
                         System.out.println("It's my turn now");
-                        deadline_to_send_move = System.currentTimeMillis()+(int) (1000 * state.available_time) - time_to_send;
-                        if (state.last_move != null) minMaxTree.updateByMove(new Move(state.last_move), false);
+                        deadline_to_send_move = System.currentTimeMillis() + (int) (1000 * state.available_time) - time_to_send;
+                        if (state.last_move != null) {
+                            minMaxTree.updateByMove(new Move(state.last_move), false);
+                            current_layer--;
+                        }
 //                        System.out.println("Updated enemy's move");
                         if (!queue_of_moves.isEmpty()) {
 //                            if(isGameFinished(minMaxTree)) continue;
                             network.sendMove(connection_data.token, queue_of_moves.pollFirst());
                             continue;
                         }
+
+                        int amount_of_leaves = minMaxTree.deepest_leaves.size() + minMaxTree.leaves.size();
                         Move next_move;
-//                        next_move = minMaxTree.evaluate(1000);
-                        next_move = minMaxTree.evaluate(1000);
-//                        for(int i=3; i<=minMaxTree.leaves.get(0).calculateLength(); ++i){
-//                            if(System.currentTimeMillis() >= deadline_to_send_move){
-//								queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
-//								isMoveSent=true;
-//                            	continue;
-//							}
-//                            next_move = minMaxTree.evaluate(i);
+                        next_move = minMaxTree.evaluate(current_layer, deadline_to_send_move);
+//                        for (int depth = 4; depth < MAX_LAYERS_DEPTH; ++depth) {
+//                            Move move = minMaxTree.evaluate(depth, deadline_to_send_move);
+//                            if (move == null) break;
+//                            else next_move = move;
 //                        }
-                        while (System.currentTimeMillis() < deadline_to_send_move) {
-                            try {
-                                if (!minMaxTree.leaves.isEmpty() && minMaxTree.getDeepestBest().calculateLength() < MAX_LAYERS_DEPTH) {
-//                                    System.out.println("I'm growing tree");
-                                    long deadline = deadline_to_send_move;
-                                    minMaxTree.addLayer(deadline);
-                                    System.out.println("Difference between planned stop time and actual:" + (deadline - System.currentTimeMillis()));
-                                    next_move = minMaxTree.evaluate(getMaxDepth(deadline_to_send_move-System.currentTimeMillis()));
-                                } else break;
-                            } catch (OutOfMemoryError error) {
-                                System.out.println("We need more resources!");
-                                break;
-                            }
+                        for(; current_layer<getMaxDepth((long) (1000*state.available_time)); current_layer++){
+                            boolean is_finished_layer = minMaxTree.addLayer(deadline_to_send_move-1000);
+                            if(!is_finished_layer) break;
                         }
+                        Move move = minMaxTree.evaluate(1000, deadline_to_send_move);
+                        if (move != null) next_move = move;
+
+//                        while (System.currentTimeMillis() < deadline_to_send_move) {
+//                            amount_of_leaves = minMaxTree.deepest_leaves.size() + minMaxTree.leaves.size();
+//                            try {
+//                                if (!minMaxTree.leaves.isEmpty() &&
+//                                        current_layer < getMaxDepth((long) (1000*state.available_time))) {
+////                                    System.out.println("I'm growing tree");
+//                                    long deadline = deadline_to_send_move - timeToCalculate(amount_of_leaves);
+//                                    if(System.currentTimeMillis()>=deadline){
+//                                        Move move = minMaxTree.evaluate(1000, deadline_to_send_move);
+//                                        if (move != null) next_move = move;
+//                                        break;
+//                                    }
+//                                    boolean is_finished_layer = minMaxTree.addLayer(deadline);
+//                                    if(is_finished_layer) current_layer++;
+//                                    System.out.println("Difference between planned stop time and actual:" + (deadline - System.currentTimeMillis()));
+//                                    Move move = minMaxTree.evaluate(1000, deadline_to_send_move);
+//                                    if (move == null) break;
+//                                    else next_move = move;
+//                                } else break;
+//                            } catch (OutOfMemoryError error) {
+//                                System.out.println("We need more resources!");
+//                                analyzeAndSendMove(next_move, minMaxTree);
+//                                break;
+//                            }
+//                        }
                         // check if it is last move
                         queue_of_moves = analyzeAndSendMove(next_move, minMaxTree);
-						isMoveSent=true;
+                        isMoveSent = true;
 
                         state = network.getInfo();
                         System.out.println("Whose turn: " + state.whose_turn);
 //                        System.out.println("Winner: " + state.winner);
 //                        System.out.println("Time: " + state.available_time);
-                        System.out.println("Last move: "+state.last_move);
+                        System.out.println("Last move: " + state.last_move);
 //                        System.out.println("I just sent: " + next_move);
                         StringBuilder str = new StringBuilder();
                         for (MinMaxVertex v : minMaxTree.root.getChildren().get(0).getChildren())
                             str.append(v.move.toString()).append(", ");
-                        System.out.println("Available enemy moves"+str);
+                        System.out.println("Available enemy moves" + str);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -153,12 +172,11 @@ class Game {
                 if (state.is_finished) {
                     break;
                 }
-				try{
+                try {
 //					Thread.sleep(200);
-				}
-				catch(Exception e){
-					e.printStackTrace();
-				}
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 //			timer.cancel();
         } catch (Exception e) {
@@ -166,39 +184,46 @@ class Game {
             e.printStackTrace();
         }
         System.out.println("Game finished! Winner: " + state.winner);
-        System.out.println("Average calc func time in nanoseconds: "+MinMaxVertex.average_1000);
-        System.out.println("Stat from "+MinMaxVertex.amount_of_1000_av*1000+" calculations");
+        System.out.println("Average calc func time in nanoseconds: " + MinMaxVertex.average_1000);
+        System.out.println("Stat from " + MinMaxVertex.amount_of_1000_av * 1000 + " calculations");
+    }
+
+    private long timeToCalculate(int amount_of_leaves) {
+        return 100+amount_of_leaves/50;
     }
 
     private int getMaxDepth(long l) {
-        if(l <= 500) return 3;
-        if(l<= 1000) return 6;
-        if(l <= 2000) return 7;
+        if (l <= 100) return 3;
+        if(l<=500) return 4;
+        if (l <= 1000) return 5;
+        if(l<=2000) return 6;
+        if (l <= 4000) return 7;
         return 8;
     }
 
-    private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree minMaxTree) throws IOException{
-		if (next_move.positions.size() > 2) {
-			LinkedList<Move> queue_of_moves = generateQueue(next_move);
+    private LinkedList<Move> analyzeAndSendMove(Move next_move, MinMaxTree minMaxTree) throws IOException {
+        current_layer--;
+        if (next_move.positions.size() > 2) {
+            LinkedList<Move> queue_of_moves = generateQueue(next_move);
             minMaxTree.updateByMove(next_move, true);
-			network.sendMove(connection_data.token, queue_of_moves.pollFirst());
-			return queue_of_moves;
-		} else sendMoveAndUpdateTree(next_move, minMaxTree);
-		return new LinkedList<>();
-	}
+            network.sendMove(connection_data.token, queue_of_moves.pollFirst());
+            return queue_of_moves;
+        } else sendMoveAndUpdateTree(next_move, minMaxTree);
+        return new LinkedList<>();
+    }
 
     private boolean isGameFinished(MinMaxTree minMaxTree) {
         boolean exist_e_piece = false;
-        for(Piece p : minMaxTree.current_pieces){
-            if(p == null) continue;
-            if(!p.side) exist_e_piece = true;
+        for (Piece p : minMaxTree.current_pieces) {
+            if (p == null) continue;
+            if (!p.side) exist_e_piece = true;
         }
-        if(!exist_e_piece) return true;
+        if (!exist_e_piece) return true;
         ArrayList<Move> available_enemy_moves = minMaxTree.getAvailableMoves(minMaxTree.current_pieces, false);
         return available_enemy_moves.isEmpty();
     }
 
-    private void sendMoveAndUpdateTree(Move move, MinMaxTree minMaxTree) throws IOException{
+    private void sendMoveAndUpdateTree(Move move, MinMaxTree minMaxTree) throws IOException {
         network.sendMove(connection_data.token, move);
         minMaxTree.updateByMove(move, true);
     }

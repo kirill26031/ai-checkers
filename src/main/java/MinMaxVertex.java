@@ -90,9 +90,9 @@ public class MinMaxVertex implements Cloneable{
     }
 
     public double evaluate(int max_depth
-//            , long deadline
+            , long deadline
     ) {
-//        if(System.nanoTime() >= deadline) return Double.NEGATIVE_INFINITY;
+        if(System.currentTimeMillis() >= deadline) return Double.NaN;
         if(children.isEmpty() || max_depth==0){
             if(isCalculated) return value;
             value = calculateFitness(current_pieces, !max);
@@ -102,9 +102,9 @@ public class MinMaxVertex implements Cloneable{
             best_child = null;
             for(MinMaxVertex child : children){
                 double current_result = child.evaluate(max_depth-1
-//                        , deadline
+                        , deadline
                 );
-//                if(current_result == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+                if(Double.isNaN(current_result)) return Double.NaN;
                 if(max ? (value < current_result) : (value > current_result)){
                     value = current_result;
                     best_child = child;
