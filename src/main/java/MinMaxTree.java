@@ -179,6 +179,7 @@ public class MinMaxTree {
 		for(MinMaxVertex child_of_moved : vertex_of_move.getChildren()){
 			child_of_moved.setFather(root.getChildren().get(0));
 		}
+
 	}
 
 	static public MinMaxVertex getDeepestBest() {
